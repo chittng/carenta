@@ -7,6 +7,7 @@ export * from './cars.js';
 export * from './constants.js';
 export * from './errors.js';
 export * from './money.js';
+export * from './pricing.js';
 export * from './rental-terms.js';
 export * from './time.js';
 export * from './uploads.js';
