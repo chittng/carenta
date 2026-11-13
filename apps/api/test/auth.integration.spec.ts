@@ -253,13 +253,15 @@ describe.runIf(process.env.INTEGRATION === '1')('auth', () => {
     });
 
     it('rotates the refresh token on every refresh', async () => {
-      const { agent } = await register();
-      const before = await prisma.userSession.count({ where: { revokedAt: null } });
+      const { agent, user } = await register();
+      // Scoped to this user: other test files create sessions in parallel.
+      const live = { userId: user.id, revokedAt: null };
+      expect(await prisma.userSession.count({ where: live })).toBe(1);
 
       const res = await agent.post('/api/v1/auth/refresh').expect(204);
 
       expect(cookieHeader(res).some((c) => c.startsWith(`${REFRESH_COOKIE}=`))).toBe(true);
-      expect(await prisma.userSession.count({ where: { revokedAt: null } })).toBe(before);
+      expect(await prisma.userSession.count({ where: live })).toBe(1);
       await agent.get('/api/v1/auth/me').expect(200);
     });
 
