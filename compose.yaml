@@ -57,6 +57,8 @@ services:
 
   # One-off job: creates the buckets and makes the public one anonymously readable.
   # Private documents (driver licenses, car papers) are only served via presigned URLs.
+  # Browsers upload straight to the private bucket (presigned PUT, hence CORS for the web
+  # origin); uploads never claimed by the API are deleted after a day by a lifecycle rule.
   rustfs-init:
     image: amazon/aws-cli:2.40.2
     depends_on:
@@ -69,6 +71,7 @@ services:
       AWS_ENDPOINT_URL: http://rustfs:9000
       PUBLIC_BUCKET: carenta-public
       PRIVATE_BUCKET: carenta-private
+      WEB_ORIGIN: http://localhost:3000
     entrypoint: ['/bin/sh', '-c']
     command:
       - |
@@ -85,7 +88,23 @@ services:
             \"Resource\": [\"arn:aws:s3:::$$PUBLIC_BUCKET/*\"]
           }]
         }"
-        echo "Buckets ready: $$PUBLIC_BUCKET (public read), $$PRIVATE_BUCKET (private)"
+        aws s3api put-bucket-cors --bucket "$$PRIVATE_BUCKET" --cors-configuration "{
+          \"CORSRules\": [{
+            \"AllowedOrigins\": [\"$$WEB_ORIGIN\"],
+            \"AllowedMethods\": [\"PUT\", \"GET\"],
+            \"AllowedHeaders\": [\"Content-Type\"],
+            \"MaxAgeSeconds\": 3600
+          }]
+        }"
+        aws s3api put-bucket-lifecycle-configuration --bucket "$$PRIVATE_BUCKET" --lifecycle-configuration "{
+          \"Rules\": [{
+            \"ID\": \"expire-unclaimed-uploads\",
+            \"Status\": \"Enabled\",
+            \"Filter\": {\"Prefix\": \"uploads/\"},
+            \"Expiration\": {\"Days\": 1}
+          }]
+        }"
+        echo "Buckets ready: $$PUBLIC_BUCKET (public read), $$PRIVATE_BUCKET (private, CORS for $$WEB_ORIGIN)"
     restart: 'no'
 
   # Catches all outgoing email. Web UI: http://localhost:8025
