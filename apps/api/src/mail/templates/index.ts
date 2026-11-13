@@ -1,6 +1,7 @@
 import { type Prisma } from '../../generated/prisma/client.js';
 import { formatDateTime } from './format.js';
 import {
+  button,
   details,
   type EmailContent,
   note,
@@ -21,6 +22,10 @@ type JsonObject = Record<string, Prisma.InputJsonValue>;
 export interface EmailTemplateData {
   /** Checks SMTP end to end: `pnpm --filter @carenta/api mail:test <email>`. */
   'system.test': { requestedAt: string };
+  /** After registering, and on "gửi lại email xác thực". */
+  'auth.verify-email': { fullName: string; verifyUrl: string };
+  /** "Quên mật khẩu". */
+  'auth.reset-password': { fullName: string; resetUrl: string };
 }
 
 export type EmailTemplateName = keyof EmailTemplateData;
@@ -45,6 +50,42 @@ const EMAIL_TEMPLATES: { [N in EmailTemplateName]: EmailTemplate<EmailTemplateDa
         paragraph('Nếu bạn đọc được email này, hệ thống gửi email của Carenta đang hoạt động.'),
         details([['Thời điểm gửi', formatDateTime(new Date(requestedAt))]]),
         note('Đây là email kiểm tra kỹ thuật, bạn không cần làm gì thêm.'),
+      ],
+    }),
+  },
+  'auth.verify-email': {
+    sensitive: ['verifyUrl'],
+    build: ({ fullName, verifyUrl }) => ({
+      subject: 'Xác thực email tài khoản Carenta',
+      heading: 'Xác thực email của bạn',
+      preheader: 'Bấm vào link để hoàn tất đăng ký tài khoản Carenta.',
+      blocks: [
+        paragraph('Xin chào ', { bold: fullName }, ','),
+        paragraph(
+          'Cảm ơn bạn đã đăng ký Carenta. Bấm nút bên dưới để xác thực email. Sau khi xác thực, bạn có thể đặt xe, đăng xe cho thuê và nhắn tin với người dùng khác.',
+        ),
+        button('Xác thực email', verifyUrl),
+        note(
+          'Link có hiệu lực trong 24 giờ và chỉ dùng được một lần. Nếu bạn không đăng ký tài khoản Carenta, hãy bỏ qua email này.',
+        ),
+      ],
+    }),
+  },
+  'auth.reset-password': {
+    sensitive: ['resetUrl'],
+    build: ({ fullName, resetUrl }) => ({
+      subject: 'Đặt lại mật khẩu Carenta',
+      heading: 'Đặt lại mật khẩu',
+      preheader: 'Link đặt lại mật khẩu có hiệu lực trong 30 phút.',
+      blocks: [
+        paragraph('Xin chào ', { bold: fullName }, ','),
+        paragraph(
+          'Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản Carenta của bạn. Bấm nút bên dưới để chọn mật khẩu mới.',
+        ),
+        button('Đặt lại mật khẩu', resetUrl),
+        note(
+          'Link có hiệu lực trong 30 phút và chỉ dùng được một lần. Sau khi đổi mật khẩu, tài khoản sẽ được đăng xuất khỏi mọi thiết bị. Nếu bạn không yêu cầu, hãy bỏ qua email này: mật khẩu của bạn vẫn giữ nguyên.',
+        ),
       ],
     }),
   },

@@ -9,6 +9,7 @@ export default defineConfig({
       NODE_ENV: 'test',
       WEB_URL: 'http://localhost:3000',
       DATABASE_URL: 'postgresql://carenta:carenta@localhost:5432/carenta',
+      JWT_SECRET: 'test-only-jwt-secret-0123456789abcdef',
       // Same as compose.yaml; only the INTEGRATION=1 tests (test/*.integration.spec.ts) connect.
       S3_ENDPOINT: 'http://localhost:9000',
       S3_REGION: 'us-east-1',

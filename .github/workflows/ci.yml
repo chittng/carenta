@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      # Prisma's config requires it even for `prisma generate`; nothing connects to it here.
+      # The Postgres started from compose.yaml below.
       DATABASE_URL: postgresql://carenta:carenta@localhost:5432/carenta
     steps:
       - uses: actions/checkout@v7
@@ -42,4 +42,14 @@ jobs:
 
       - run: pnpm typecheck
 
+      # Same services as local development, for the integration tests (test/*.integration.spec.ts)
+      - name: Start Postgres, Valkey, RustFS and Mailpit
+        run: |
+          docker compose up -d --wait postgres valkey rustfs mailpit
+          docker compose run --rm rustfs-init
+
+      - run: pnpm --filter @carenta/api exec prisma migrate deploy
+
       - run: pnpm test
+        env:
+          INTEGRATION: '1'

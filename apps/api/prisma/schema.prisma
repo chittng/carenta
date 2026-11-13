@@ -62,6 +62,8 @@ model User {
   tripReportsConfirmed   TripReport[]        @relation("TripReportConfirmedBy")
   bookingStatusLogs      BookingStatusLog[]
   notifications          Notification[]
+  sessions               UserSession[]
+  authTokens             AuthToken[]
   // Admin actions
   reviewedDriverLicenses DriverLicense[]     @relation("DriverLicenseReviewer")
   reviewedCars           Car[]               @relation("CarReviewer")
@@ -70,6 +72,54 @@ model User {
   updatedSettings        PlatformSetting[]
 
   @@map("users")
+}
+
+// ─── Authentication (spec §14) ──────────────────────────────────────────────
+
+// One signed-in device. The refresh token rotates on every use; the old token's session
+// row is revoked and points at its successor, so reuse of a stolen old token is detected
+// and ends the whole chain (familyId).
+model UserSession {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  familyId         String    @map("family_id") @db.Uuid
+  // SHA-256 of the refresh token; the token itself is never stored.
+  refreshTokenHash String    @unique @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(3)
+  // Set when rotated: the session that replaced this one.
+  replacedById     String?   @map("replaced_by_id") @db.Uuid
+  userAgent        String?   @map("user_agent")
+  ip               String?
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@map("user_sessions")
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+// One-time links sent by email. Issuing a new one deletes the user's previous ones
+// for the same purpose.
+model AuthToken {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  purpose   AuthTokenPurpose
+  // SHA-256 of the token in the link.
+  tokenHash String           @unique @map("token_hash")
+  expiresAt DateTime         @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_tokens")
 }
 
 enum DriverLicenseStatus {

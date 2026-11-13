@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { type NestExpressApplication } from '@nestjs/platform-express';
 
 import { AppModule } from './app.module.js';
 import { setupApp } from './app.setup.js';
@@ -7,7 +8,7 @@ import { AppConfigService } from './config/env.js';
 import { API_DOCS_PATH } from './docs/api-docs.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   setupApp(app);
 
   const port = app.get(AppConfigService).get('PORT', { infer: true });

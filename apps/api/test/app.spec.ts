@@ -15,6 +15,7 @@ import { z } from 'zod';
 
 import { apiErrorSchema } from '@carenta/shared';
 
+import { Public } from '../src/auth/decorators.js';
 import { AppException } from '../src/common/errors/app.exception.js';
 import { createTestApp } from './create-test-app.js';
 
@@ -49,6 +50,7 @@ const openApiDocSchema = z.object({
 });
 
 /** Test-only routes that exercise validation and every branch of the exception filter. */
+@Public()
 @Controller('test-things')
 class TestThingsController {
   @Post()

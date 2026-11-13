@@ -18,6 +18,21 @@ export const ErrorCode = {
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
 
+  // Authentication
+  /** Registering with an email that already has an account. */
+  EMAIL_TAKEN: 'EMAIL_TAKEN',
+  /** Wrong email or password (deliberately not saying which). */
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  /** The account was locked by an admin (spec §12.5). */
+  ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
+  /** The action needs a verified email; the web app offers to resend the link. */
+  EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
+  EMAIL_ALREADY_VERIFIED: 'EMAIL_ALREADY_VERIFIED',
+  /** A verification or password reset link that is unknown, used or expired. */
+  INVALID_LINK: 'INVALID_LINK',
+  /** Change password: the current password is wrong. */
+  WRONG_PASSWORD: 'WRONG_PASSWORD',
+
   // Uploads
   /** The upload key is unknown, expired, belongs to someone else or was made for another purpose. */
   UPLOAD_NOT_FOUND: 'UPLOAD_NOT_FOUND',

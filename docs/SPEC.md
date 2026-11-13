@@ -31,6 +31,17 @@
 
 Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thường. Họ chỉ bị chặn khi bấm **Đặt xe**.
 
+### Tài khoản và đăng nhập
+
+- **Chưa xác thực email**: vẫn đăng nhập, xem và tìm xe, sửa hồ sơ được. Bị chặn khi **đặt xe, đăng xe, nộp GPLX, nhắn tin, rút tiền**. Có nút gửi lại email xác thực.
+- **Phiên đăng nhập**: không dùng 30 ngày thì phải đăng nhập lại. Mỗi thiết bị là một phiên riêng.
+- **Link trong email**: link xác thực email có hiệu lực **24 giờ**, link đặt lại mật khẩu **30 phút**. Mỗi link chỉ dùng một lần; gửi link mới thì link cũ mất hiệu lực. Đặt lại mật khẩu bằng link cũng tính là đã xác thực email.
+- **Mật khẩu**: không có quy tắc độ mạnh, chỉ cần không để trống. **[Đề xuất]** Tối đa 128 ký tự (giới hạn kỹ thuật).
+- **[Đề xuất]** Email không phân biệt chữ hoa, chữ thường.
+- **[Đề xuất]** Màn hình quên mật khẩu luôn trả cùng một thông báo, không cho biết email đã có tài khoản hay chưa.
+- **[Đề xuất]** Đặt lại hoặc đổi mật khẩu thì các thiết bị khác bị đăng xuất. Tài khoản bị khoá thì mất phiên đăng nhập ngay.
+- **[Đề xuất]** Đăng nhập sai **5 lần trong 15 phút** (theo email và địa chỉ IP) thì phải chờ hết 15 phút. Email xác thực và email đặt lại mật khẩu gửi tối đa **3 lần mỗi giờ** cho mỗi email, mỗi lần cách nhau ít nhất **60 giây**.
+
 ## 4. Đăng xe (chủ xe)
 
 ### 4.1 Thông tin xe

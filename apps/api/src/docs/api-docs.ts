@@ -5,6 +5,8 @@ import { cleanupOpenApiDoc, createZodDto } from 'nestjs-zod';
 
 import { apiErrorSchema } from '@carenta/shared';
 
+import { ACCESS_COOKIE } from '../auth/auth.constants.js';
+
 export const API_DOCS_PATH = '/api/docs';
 export const API_DOCS_JSON_PATH = '/api/docs-json';
 
@@ -20,8 +22,11 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
         '',
         'Mọi lỗi trả về dạng `{ code, message }`, trong đó `message` là tiếng Việt để hiển thị cho người dùng.',
         'Lỗi `VALIDATION_FAILED` có thêm `details`: danh sách `{ path, message }` cho từng trường sai.',
+        '',
+        'Xác thực bằng cookie httpOnly do `/auth/login` đặt. Mọi endpoint cần đăng nhập trừ khi ghi khác. Gặp 401 thì gọi `POST /auth/refresh` rồi thử lại một lần.',
       ].join('\n'),
     )
+    .addCookieAuth(ACCESS_COOKIE)
     .setVersion('1')
     .build();
 
