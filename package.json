@@ -1,0 +1,35 @@
+{
+  "name": "carenta",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:migrate": "pnpm --filter @carenta/api db:migrate",
+    "db:seed": "pnpm --filter @carenta/api db:seed"
+  },
+  "devDependencies": {
+    "@carenta/config": "workspace:*",
+    "oxfmt": "0.78.0",
+    "oxlint": "1.93.0",
+    "oxlint-tsgolint": "7.0.2006",
+    "turbo": "2.11.11"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.16.1",
+      "onFail": "error"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "24.22.1",
+      "onFail": "error"
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "node", "promise", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "options": {
+    "typeAware": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "env": {
+    "builtin": true,
+    "es2024": true
+  },
+  "ignorePatterns": ["**/dist/**", "**/.next/**", "**/generated/**", "**/next-env.d.ts"],
+  "rules": {
+    "eqeqeq": ["error", "always"],
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "fixStyle": "inline-type-imports",
+        "disallowTypeAnnotations": false
+      }
+    ],
+    "typescript/no-extraneous-class": [
+      "error",
+      {
+        "allowWithDecorator": true
+      }
+    ],
+    "typescript/no-explicit-any": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-unsafe-argument": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-return": "error",
+    "typescript/only-throw-error": "error",
+    "typescript/prefer-promise-reject-errors": "error",
+    "typescript/require-await": "error",
+    "typescript/restrict-plus-operands": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": ["**/*.css", "dotenv/config"]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["apps/api/**", "packages/**"],
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": ["apps/web/**"],
+      "plugins": ["react", "react-perf", "jsx-a11y", "nextjs"],
+      "env": {
+        "browser": true
+      },
+      "rules": {
+        "react/rules-of-hooks": "error",
+        "react/exhaustive-deps": "error",
+        "react/react-in-jsx-scope": "off"
+      }
+    },
+    {
+      "files": ["**/*.spec.ts", "**/*.test.ts", "**/*.test.tsx"],
+      "env": {
+        "vitest": true
+      }
+    }
+  ],
+  "settings": {
+    "next": {
+      "rootDir": "apps/web"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "sortImports": {
+    "internalPattern": ["@/", "@carenta/"]
+  },
+  "sortTailwindcss": {
+    "stylesheet": "./apps/web/src/app/globals.css",
+    "functions": ["cn", "cva"]
+  },
+  "ignorePatterns": ["pnpm-lock.yaml", "apps/api/prisma/migrations/**"]
+}

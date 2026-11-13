@@ -1,0 +1,12 @@
+{
+  "extends": "@carenta/config/tsconfig/node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "removeComments": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src", "test", "prisma", "*.config.ts"]
+}
