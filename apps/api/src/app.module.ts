@@ -3,6 +3,7 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 
 import { AuthModule } from './auth/auth.module.js';
+import { CarsModule } from './cars/cars.module.js';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { AppConfigModule } from './config/config.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -21,6 +22,7 @@ import { StorageModule } from './storage/storage.module.js';
     JobsModule,
     MailModule,
     AuthModule,
+    CarsModule,
     HealthModule,
   ],
   providers: [

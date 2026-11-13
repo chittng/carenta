@@ -52,6 +52,11 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - **Mô tả** tự do.
 - **Quy định xe** (bật/tắt từng mục, có thể ghi chú thêm): không hút thuốc, không chở thú cưng, không chở sầu riêng/hải sản, trả xe với mức nhiên liệu như lúc nhận, giữ vệ sinh xe.
 - **Giới hạn km** (tuỳ chọn): số km/ngày và phụ phí cho mỗi km vượt.
+- **Lưu nháp và gửi duyệt**: lần lưu đầu tiên cần đủ thông tin cơ bản và địa chỉ xe. Ảnh, giấy tờ và tiện nghi có thể bổ sung ở các bước sau. Muốn gửi duyệt thì xe phải có 4–15 ảnh, giấy đăng ký và giấy đăng kiểm còn hạn (ngày hết hạn từ hôm nay trở đi). Xe bị từ chối thì chủ xe sửa rồi gửi duyệt lại.
+- **Năm sản xuất**: không giới hạn tuổi xe. Hệ thống chỉ nhận năm từ 1990 đến năm sau để chặn lỗi nhập.
+- **Xoá xe**: chỉ xoá được xe chưa từng được duyệt (nháp hoặc bị từ chối). Xe đã từng hiển thị chỉ tạm ngưng được, để giữ lịch sử đơn và đánh giá.
+- **[Đề xuất]** Biển số theo dạng `51K-123.45` (hoặc `51K-1234` với biển cũ 4 số); hệ thống tự chuẩn hoá khi nhập. Mỗi biển số chỉ thuộc một xe, kể cả biển số đang nằm trong bản sửa chờ duyệt. Không nhận biển ngoại giao.
+- **[Đề xuất]** Số chỗ từ 2 đến 16. Toạ độ xe phải nằm trong lãnh thổ Việt Nam.
 
 ### 4.2 Giá. Chủ xe cấu hình linh hoạt
 
@@ -209,6 +214,10 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 - **Phải được admin duyệt lại**: biển số, giấy tờ xe, hãng/dòng/năm sản xuất. Trong thời gian chờ duyệt, xe vẫn hiển thị bằng thông tin cũ.
 - **Không cần duyệt lại**: giá, ảnh, mô tả, tiện nghi, lịch trống.
 - Chủ xe có thể **tạm ngưng** xe. Khi đó xe bị ẩn khỏi kết quả tìm kiếm, các đơn đã xác nhận vẫn giữ nguyên.
+- Mỗi xe có **tối đa một bản thay đổi chờ duyệt**. Chủ xe sửa tiếp thì bản đó được ghi đè; sửa về giá trị cũ thì thay đổi đó bị bỏ. Chủ xe có thể huỷ bản đang chờ. Admin từ chối thì bản sửa bị bỏ, xe giữ thông tin cũ và chủ xe thấy lý do từ chối.
+- **[Đề xuất]** Xe đang chờ duyệt lần đầu chưa hiển thị công khai, nên mọi thay đổi áp dụng ngay. Admin duyệt theo thông tin tại thời điểm duyệt.
+- **[Đề xuất]** Xe đã duyệt phải giữ ít nhất 4 ảnh: muốn xoá thì thêm ảnh mới trước.
+- **[Đề xuất]** Xe đã bị admin gỡ thì chủ xe không sửa được nữa.
 
 ### 12.4 Trong chuyến
 
@@ -283,6 +292,7 @@ User ─┬─ DriverLicense (1-1, trạng thái duyệt)
       ├─ WithdrawalRequest
       └─ Car ─┬─ CarPhoto
               ├─ CarDocument (private)
+              ├─ CarRevision (bản sửa chờ duyệt lại, kèm giấy tờ mới)
               ├─ CarAmenity (n-n với Amenity)
               ├─ CarPricing (giờ/ngày/tháng, phụ phí, giảm giá)
               ├─ AvailabilityBlock

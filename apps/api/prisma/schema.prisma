@@ -67,6 +67,7 @@ model User {
   // Admin actions
   reviewedDriverLicenses DriverLicense[]     @relation("DriverLicenseReviewer")
   reviewedCars           Car[]               @relation("CarReviewer")
+  reviewedCarRevisions   CarRevision[]       @relation("CarRevisionReviewer")
   reviewedWithdrawals    WithdrawalRequest[] @relation("WithdrawalReviewer")
   resolvedDisputes       Dispute[]           @relation("DisputeResolver")
   updatedSettings        PlatformSetting[]
@@ -305,8 +306,9 @@ model CarModel {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  make CarMake @relation(fields: [makeId], references: [id], onDelete: Restrict)
-  cars Car[]
+  make         CarMake       @relation(fields: [makeId], references: [id], onDelete: Restrict)
+  cars         Car[]
+  carRevisions CarRevision[]
 
   @@unique([makeId, name])
   @@unique([makeId, slug])
@@ -451,6 +453,7 @@ model Car {
   pricing            CarPricing?
   photos             CarPhoto[]
   documents          CarDocument[]
+  revisions          CarRevision[]
   amenities          CarAmenity[]
   availabilityBlocks AvailabilityBlock[]
   bookings           Booking[]
@@ -482,18 +485,57 @@ enum CarDocumentType {
   INSPECTION
 }
 
+// A car has at most one current document of each type (revision_id null). A replacement
+// submitted for an approved car belongs to its pending revision until an admin approves it.
 model CarDocument {
-  id        String          @id @default(uuid(7)) @db.Uuid
-  carId     String          @map("car_id") @db.Uuid
-  type      CarDocumentType
-  fileKey   String          @map("file_key") // private bucket
-  expiresOn DateTime?       @map("expires_on") @db.Date
-  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  id         String          @id @default(uuid(7)) @db.Uuid
+  carId      String          @map("car_id") @db.Uuid
+  revisionId String?         @map("revision_id") @db.Uuid
+  type       CarDocumentType
+  fileKey    String          @map("file_key") // private bucket
+  // Required for INSPECTION (the inspection must still be valid)
+  expiresOn  DateTime?       @map("expires_on") @db.Date
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+  car      Car          @relation(fields: [carId], references: [id], onDelete: Cascade)
+  revision CarRevision? @relation(fields: [revisionId], references: [id], onDelete: Cascade)
 
   @@index([carId, type])
+  @@index([revisionId])
   @@map("car_documents")
+}
+
+enum CarRevisionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Changes to an approved car that need an admin to review them again (spec §12.3):
+// license plate, make/model/year and documents. The car keeps showing its current data
+// until the revision is approved. A car has at most one PENDING revision (partial unique
+// index in SQL); further edits overwrite it. Null fields are not being changed.
+model CarRevision {
+  id              String            @id @default(uuid(7)) @db.Uuid
+  carId           String            @map("car_id") @db.Uuid
+  status          CarRevisionStatus @default(PENDING)
+  modelId         Int?              @map("model_id")
+  year            Int?
+  licensePlate    String?           @map("license_plate")
+  rejectionReason String?           @map("rejection_reason")
+  reviewedById    String?           @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime?         @map("reviewed_at") @db.Timestamptz(3)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  car        Car           @relation(fields: [carId], references: [id], onDelete: Cascade)
+  model      CarModel?     @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  reviewedBy User?         @relation("CarRevisionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  documents  CarDocument[]
+
+  @@index([carId, createdAt])
+  @@index([status, updatedAt])
+  @@map("car_revisions")
 }
 
 model CarAmenity {
