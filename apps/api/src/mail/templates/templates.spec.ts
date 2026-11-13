@@ -75,6 +75,35 @@ describe('templates', () => {
     expect(email.text).toContain('Thời điểm gửi: 14:30 13/11/2026');
   });
 
+  it('renders car review results with the reason and a link to the car', () => {
+    const email = buildEmail(
+      'car.rejected',
+      {
+        fullName: 'Minh',
+        carId: 'abc',
+        carName: 'VinFast VF 8 2024 (51K-123.45)',
+        reason: 'Ảnh giấy đăng ký bị mờ.',
+      },
+      context,
+    );
+
+    expect(email.subject).toBe('Xe của bạn chưa được duyệt');
+    expect(email.text).toContain(
+      'Xe: VinFast VF 8 2024 (51K-123.45)\nLý do: Ảnh giấy đăng ký bị mờ.',
+    );
+    expect(email.text).toContain('Xem xe của tôi: https://carenta.vn/xe-cua-toi/abc');
+    expect(
+      buildEmail('car.approved', { fullName: 'Minh', carId: 'abc', carName: 'Xe' }, context).text,
+    ).not.toContain('Lý do');
+  });
+
+  it('renders the account lock with its reason', () => {
+    const email = buildEmail('account.locked', { fullName: 'Minh', reason: 'Gian lận.' }, context);
+
+    expect(email.subject).toBe('Tài khoản Carenta của bạn đã bị khoá');
+    expect(email.text).toContain('Lý do: Gian lận.');
+  });
+
   it('logs payloads as-is when a template has no sensitive fields', () => {
     expect(redactEmailData('system.test', { requestedAt: 'x' })).toEqual({ requestedAt: 'x' });
   });

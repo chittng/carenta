@@ -298,6 +298,7 @@ export const carRevisionSchema = z.object({
 export const ownerCarSchema = z.object({
   id: z.uuid(),
   status: z.enum(CarStatus),
+  /** Why an admin rejected (REJECTED), hid (HIDDEN) or removed (REMOVED) the car. */
   rejectionReason: z.string().nullable(),
   submittedAt: timestamp.nullable(),
   make: catalogRefSchema,

@@ -202,11 +202,19 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 - **Tổng quan**: số người dùng, số xe, số đơn theo trạng thái, GMV, doanh thu hoa hồng (biểu đồ theo ngày).
 - **Duyệt GPLX**: hàng đợi, xem ảnh, duyệt hoặc từ chối kèm lý do.
 - **Duyệt xe**: hàng đợi, xem giấy tờ, duyệt hoặc từ chối kèm lý do. Ẩn hoặc gỡ được xe đang hiển thị.
+  - Hai hàng đợi: **xe mới** (gửi duyệt sớm nhất lên trước) và **thay đổi của xe đã duyệt** (§12.3). Duyệt thay đổi thì áp dụng biển số, hãng/dòng/năm mới và thay giấy tờ cùng loại.
+  - Lúc duyệt xe mới, hệ thống kiểm tra lại điều kiện gửi duyệt (ảnh, bảng giá, giấy tờ còn hạn), vì chủ xe vẫn sửa được trong lúc chờ.
+  - **Ẩn** là tạm thời: xe ra khỏi tìm kiếm, admin bỏ ẩn được, chủ xe vẫn sửa được nhưng không tự cho thuê lại được. **Gỡ** là vĩnh viễn: không khôi phục, chủ xe không sửa được, thay đổi đang chờ bị bỏ. Chỉ ẩn hoặc gỡ được xe đã duyệt; chuyến đã xác nhận giữ nguyên.
+  - Từ chối, ẩn, gỡ đều bắt buộc lý do. Mọi kết quả (duyệt, từ chối, ẩn, bỏ ẩn, gỡ) được gửi email cho chủ xe kèm lý do.
+  - **[Đề xuất]** Bỏ ẩn thì xe hiển thị lại (đang cho thuê); chủ xe có thể tạm ngưng lại nếu muốn.
 - **Người dùng**: tìm kiếm, xem chi tiết, khoá hoặc mở khoá.
+  - Tìm theo tên, email hoặc số điện thoại; lọc theo trạng thái và vai trò.
+  - Khoá tài khoản bắt buộc lý do, đăng xuất mọi thiết bị ngay và gửi email kèm lý do; mở khoá cũng gửi email. Không khoá được tài khoản admin. Xử lý đơn thuê khi khoá (§12.5) làm cùng phần đơn thuê.
 - **Đơn thuê**: tra cứu, xem dòng thời gian, huỷ cưỡng chế.
 - **Tranh chấp**: xem bằng chứng hai bên, ra quyết định.
 - **Rút tiền**: duyệt yêu cầu, đánh dấu đã chuyển.
 - **Cấu hình**: % hoa hồng, chính sách huỷ, danh mục hãng xe/dòng xe/tiện nghi.
+  - Danh mục chỉ thêm, đổi tên, bật/tắt, **không xoá**. Mục đã tắt không hiện khi đăng xe mới; xe đang dùng vẫn giữ nguyên. Mã tiện nghi cố định sau khi tạo.
 
 ## 12. Quy tắc nghiệp vụ và tình huống đặc biệt **[Đề xuất]**
 
