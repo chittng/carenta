@@ -8,5 +8,15 @@ allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
+  '@scarf/scarf': false
   sharp: false
   unrs-resolver: false
+
+# nestjs-zod 5.x only declares NestJS 10/11 peers; verified against NestJS 12 by apps/api tests.
+peerDependencyRules:
+  allowedVersions:
+    nestjs-zod>@nestjs/common: '12'
+    nestjs-zod>@nestjs/swagger: '12'
+
+minimumReleaseAgeExclude:
+  - '@nestjs/swagger@12.1.2'

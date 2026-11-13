@@ -1,8 +1,20 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 
-import { HealthController } from './health/health.controller.js';
+import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
+import { AppConfigModule } from './config/config.module.js';
+import { HealthModule } from './health/health.module.js';
+import { PrismaModule } from './prisma/prisma.module.js';
 
 @Module({
-  controllers: [HealthController],
+  imports: [AppConfigModule, PrismaModule, HealthModule],
+  providers: [
+    // Validates @Body/@Query/@Param typed with a createZodDto class.
+    { provide: APP_PIPE, useClass: ZodValidationPipe },
+    // Strips and checks responses declared with @ZodResponse.
+    { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  ],
 })
 export class AppModule {}
