@@ -4,7 +4,9 @@ import {
   type ApiErrorDetail,
   CAR_PHOTO_MAX,
   CAR_PHOTO_MIN,
+  type CarDelivery,
   type CarLocation,
+  type CarPricingInput,
   CarDocumentType,
   type CarRules,
   CarRevisionStatus,
@@ -71,9 +73,9 @@ const isUniqueViolation = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 
 /**
- * Cars as managed by their owner (CARENTA-13, spec §4.1, §12.3). Every method takes the
- * caller's id and answers 404 for cars they do not own, so ids of other cars are not leaked.
- * Admin review lives in Console (CARENTA-15); pricing and delivery in CARENTA-14.
+ * Cars as managed by their owner (spec §4.1–4.6, §12.3). Every method takes the caller's id
+ * and answers 404 for cars they do not own, so ids of other cars are not leaked.
+ * Admin review lives in Console (CARENTA-15).
  */
 @Injectable()
 export class CarsService {
@@ -127,6 +129,10 @@ export class CarsService {
             ...(input.rules && rulesData(input.rules)),
             ...mileageData(input.mileageLimit ?? null),
             ...locationData(input.location),
+            instantBook: input.instantBook,
+            depositAmount: input.depositAmount,
+            bufferMinutes: input.bufferMinutes,
+            ...(input.delivery !== undefined && deliveryData(input.delivery)),
             amenities: { create: (input.amenityIds ?? []).map((amenityId) => ({ amenityId })) },
           },
           select: { id: true },
@@ -220,8 +226,9 @@ export class CarsService {
           'Xe đã được gửi duyệt hoặc đã được duyệt.',
         );
       }
-      const [photoCount, documents] = await Promise.all([
+      const [photoCount, pricing, documents] = await Promise.all([
         tx.carPhoto.count({ where: { carId } }),
+        tx.carPricing.findUnique({ where: { carId }, select: { carId: true } }),
         tx.carDocument.findMany({
           where: { carId, revisionId: null },
           select: { type: true, expiresOn: true },
@@ -229,6 +236,7 @@ export class CarsService {
       ]);
       const missing = missingForSubmission({
         photoCount,
+        hasPricing: pricing !== null,
         documents: documents.map((d) => ({
           type: d.type,
           expiresOn: d.expiresOn ? toDateOnly(d.expiresOn) : null,
@@ -394,6 +402,24 @@ export class CarsService {
       throw error;
     }
     await this.removeFiles('CAR_DOCUMENT', replaced);
+    return this.get(ownerId, carId);
+  }
+
+  /**
+   * Sets the price list (spec §4.2), replacing the previous one. Prices never need another
+   * review (spec §12.3) and bookings already made keep the prices they were made with.
+   */
+  async putPricing(ownerId: string, carId: string, input: CarPricingInput): Promise<OwnerCar> {
+    await this.prisma.$transaction(async (tx) => {
+      const car = await lockOwnedCar(tx, carId, ownerId);
+      if (editMode(car.status) === 'locked') throw carRemoved();
+      await tx.carPricing.upsert({
+        where: { carId },
+        create: { carId, ...input },
+        update: input,
+      });
+      await touch(tx, carId);
+    });
     return this.get(ownerId, carId);
   }
 
@@ -621,6 +647,19 @@ function detailsData(input: UpdateCarInput) {
     ...(input.rules && rulesData(input.rules)),
     ...(input.mileageLimit !== undefined && mileageData(input.mileageLimit)),
     ...(input.location && locationData(input.location)),
+    instantBook: input.instantBook,
+    depositAmount: input.depositAmount,
+    bufferMinutes: input.bufferMinutes,
+    ...(input.delivery !== undefined && deliveryData(input.delivery)),
+  };
+}
+
+function deliveryData(delivery: CarDelivery | null) {
+  return {
+    deliveryEnabled: delivery !== null,
+    deliveryMaxRadiusKm: delivery?.maxRadiusKm ?? null,
+    deliveryFeePerKm: delivery?.feePerKm ?? null,
+    deliveryFreeRadiusKm: delivery?.freeRadiusKm ?? null,
   };
 }
 

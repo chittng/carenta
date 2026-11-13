@@ -57,18 +57,22 @@ export function enforcesPhotoMinimum(status: CarStatus): boolean {
 
 export interface SubmissionState {
   photoCount: number;
+  hasPricing: boolean;
   /** The car's current documents (not those of a revision). */
   documents: { type: CarDocumentType; expiresOn: string | null }[];
 }
 
 /**
- * What is missing before a car can be sent for review: 4–15 photos, the registration and an
- * inspection that is still valid (decided 2026-11-14). Pricing is checked by CARENTA-14.
+ * What is missing before a car can be sent for review: 4–15 photos, a price list, the
+ * registration and an inspection that is still valid (decided 2026-11-14).
  */
 export function missingForSubmission(state: SubmissionState, now = new Date()): ApiErrorDetail[] {
   const missing: ApiErrorDetail[] = [];
   if (state.photoCount < CAR_PHOTO_MIN) {
     missing.push({ path: 'photos', message: `Cần ít nhất ${CAR_PHOTO_MIN} ảnh xe.` });
+  }
+  if (!state.hasPricing) {
+    missing.push({ path: 'pricing', message: 'Cần thiết lập bảng giá.' });
   }
   const registration = state.documents.find((d) => d.type === CarDocumentType.REGISTRATION);
   if (!registration) {

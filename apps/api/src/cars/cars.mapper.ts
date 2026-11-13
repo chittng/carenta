@@ -1,6 +1,8 @@
 import {
   type CarDocument as CarDocumentDto,
+  type CarPricingView,
   CarRevisionStatus,
+  effectiveLateFeePerHour,
   type OwnerCar,
   type OwnerCarSummary,
 } from '@carenta/shared';
@@ -21,6 +23,7 @@ export const OWNER_CAR_INCLUDE = {
   },
   photos: { orderBy: { position: 'asc' } },
   documents: { where: { revisionId: null }, orderBy: { type: 'asc' } },
+  pricing: true,
   // The latest revision: shown while pending, or until the next edit if it was rejected.
   revisions: {
     orderBy: { createdAt: 'desc' },
@@ -41,6 +44,7 @@ export const OWNER_CAR_SUMMARY_SELECT = {
   model: modelWithMake,
   photos: { orderBy: { position: 'asc' }, take: 1, select: { fileKey: true } },
   revisions: { where: { status: CarRevisionStatus.PENDING }, select: { id: true } },
+  pricing: { select: { carId: true } },
   _count: { select: { photos: true } },
 } as const satisfies Prisma.CarSelect;
 
@@ -53,6 +57,22 @@ export const toDateOnly = (date: Date) => date.toISOString().slice(0, 10);
 export const fromDateOnly = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 type DocumentRecord = OwnerCarRecord['documents'][number];
+type PricingRecord = NonNullable<OwnerCarRecord['pricing']>;
+
+export function toPricingView(pricing: PricingRecord): CarPricingView {
+  return {
+    hourlyPrice: pricing.hourlyPrice,
+    dailyPrice: pricing.dailyPrice,
+    monthlyPrice: pricing.monthlyPrice,
+    minDurationHours: pricing.minDurationHours,
+    maxDurationDays: pricing.maxDurationDays,
+    weekendSurchargePercent: pricing.weekendSurchargePercent,
+    holidaySurchargePercent: pricing.holidaySurchargePercent,
+    longRentalDiscountPercent: pricing.longRentalDiscountPercent,
+    lateFeePerHour: pricing.lateFeePerHour,
+    effectiveLateFeePerHour: effectiveLateFeePerHour(pricing),
+  };
+}
 
 async function toDocument(uploads: UploadsService, doc: DocumentRecord): Promise<CarDocumentDto> {
   return {
@@ -108,6 +128,21 @@ export async function toOwnerCar(uploads: UploadsService, car: OwnerCarRecord): 
       .map(({ amenity }) => amenity)
       .toSorted((a, b) => a.sortOrder - b.sortOrder)
       .map(({ id, code, name }) => ({ id, code, name })),
+    instantBook: car.instantBook,
+    depositAmount: car.depositAmount,
+    bufferMinutes: car.bufferMinutes,
+    delivery:
+      car.deliveryEnabled &&
+      car.deliveryMaxRadiusKm !== null &&
+      car.deliveryFeePerKm !== null &&
+      car.deliveryFreeRadiusKm !== null
+        ? {
+            maxRadiusKm: car.deliveryMaxRadiusKm,
+            feePerKm: car.deliveryFeePerKm,
+            freeRadiusKm: car.deliveryFreeRadiusKm,
+          }
+        : null,
+    pricing: car.pricing && toPricingView(car.pricing),
     photos: car.photos.map((photo) => ({
       id: photo.id,
       position: photo.position,
@@ -145,6 +180,7 @@ export function toOwnerCarSummary(
     licensePlate: car.licensePlate,
     coverPhoto: cover ? uploads.carPhotoUrls(cover.fileKey) : null,
     photoCount: car._count.photos,
+    hasPricing: car.pricing !== null,
     hasPendingRevision: car.revisions.length > 0,
     createdAt: car.createdAt.toISOString(),
     updatedAt: car.updatedAt.toISOString(),

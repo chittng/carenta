@@ -427,6 +427,8 @@ model Car {
   longitude   Decimal @db.Decimal(9, 6)
 
   // Delivery (spec §4.4). Pickup at the car's location is always available.
+  // All three are set when delivery is on and null when off (CHECK in SQL). The first
+  // free_radius km are free, each km beyond costs fee_per_km.
   deliveryEnabled      Boolean @default(false) @map("delivery_enabled")
   deliveryMaxRadiusKm  Int?    @map("delivery_max_radius_km")
   deliveryFeePerKm     Int?    @map("delivery_fee_per_km")
@@ -563,7 +565,8 @@ model CarPricing {
   holidaySurchargePercent   Int?     @map("holiday_surcharge_percent")
   // Applied to rentals of 7 days or more
   longRentalDiscountPercent Int?     @map("long_rental_discount_percent")
-  // VND per hour after the 30-minute grace period; null means 10% of the daily price
+  // VND per hour after the 30-minute grace period; null means 10% of the daily price,
+  // so it is required when there is no daily price (CHECK in SQL)
   lateFeePerHour            Int?     @map("late_fee_per_hour")
   createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
