@@ -38,6 +38,18 @@ export const ErrorCode = {
   UPLOAD_NOT_FOUND: 'UPLOAD_NOT_FOUND',
   /** The uploaded file is not a JPEG/PNG/WebP image, is corrupt, or is too large. */
   UPLOAD_INVALID_FILE: 'UPLOAD_INVALID_FILE',
+
+  // Cars
+  /** A make, model or amenity that is not in the catalogue (or was deactivated). */
+  CATALOG_ITEM_NOT_FOUND: 'CATALOG_ITEM_NOT_FOUND',
+  /** Another car already has this plate, or another pending revision asks for it. */
+  LICENSE_PLATE_TAKEN: 'LICENSE_PLATE_TAKEN',
+  /** The action is not allowed in the car's current status (e.g. deleting a listed car). */
+  CAR_STATUS_CONFLICT: 'CAR_STATUS_CONFLICT',
+  /** Submitting for review with photos or documents missing; `details` lists them. */
+  CAR_INCOMPLETE: 'CAR_INCOMPLETE',
+  /** More than 15 photos, or fewer than 4 on a car that has been approved. */
+  CAR_PHOTO_LIMIT: 'CAR_PHOTO_LIMIT',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
