@@ -255,6 +255,14 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 | Môi trường           | Docker Compose cho local (Postgres, Valkey, RustFS, Mailpit)                                 |
 | Deploy **[Đề xuất]** | Web lên Vercel. API, Postgres, Valkey lên Railway hoặc Render                                |
 
+### Tải ảnh lên **[Đề xuất]**
+
+- Chỉ nhận ảnh **JPG, PNG, WebP**, tối đa **10 MB** mỗi tệp. Trình duyệt tải thẳng lên kho lưu trữ qua link có hạn 10 phút. API kiểm tra lại định dạng thật của tệp trước khi nhận, không tin loại tệp trình duyệt khai báo.
+- **Ảnh xe** và **ảnh đại diện** là công khai. Hệ thống xoá metadata (gồm vị trí GPS) và lưu dạng WebP. Ảnh xe có hai cỡ: lớn (cạnh dài tối đa 1600px) và nhỏ (tối đa 640px), giữ nguyên tỉ lệ. Ảnh đại diện được cắt vuông 256px.
+- **GPLX, giấy tờ xe, ảnh biên bản giao nhận, bằng chứng khiếu nại** là riêng tư và được giữ nguyên tệp gốc, kể cả thời điểm chụp trong EXIF, để làm bằng chứng. Chỉ người có quyền mới xem được, qua link có hạn 5 phút.
+- **Ảnh gửi trong chat** là riêng tư và được xoá metadata để không lộ vị trí người gửi.
+- Ảnh đã tải lên nhưng không được dùng (ví dụ người dùng bỏ dở form) tự xoá sau 1 ngày.
+
 ## 15. Mô hình dữ liệu (rút gọn)
 
 ```

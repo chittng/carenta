@@ -17,6 +17,12 @@ export const ErrorCode = {
   TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+
+  // Uploads
+  /** The upload key is unknown, expired, belongs to someone else or was made for another purpose. */
+  UPLOAD_NOT_FOUND: 'UPLOAD_NOT_FOUND',
+  /** The uploaded file is not a JPEG/PNG/WebP image, is corrupt, or is too large. */
+  UPLOAD_INVALID_FILE: 'UPLOAD_INVALID_FILE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
