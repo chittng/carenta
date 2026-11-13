@@ -21,15 +21,14 @@ import {
   type UpdateCarInput,
 } from '@carenta/shared';
 
+import { fromDateOnly, toDateOnly } from '../common/dates.js';
 import { AppException } from '../common/errors/app.exception.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UploadsService } from '../storage/uploads.service.js';
 import {
-  fromDateOnly,
   OWNER_CAR_INCLUDE,
   OWNER_CAR_SUMMARY_SELECT,
-  toDateOnly,
   toOwnerCar,
   toOwnerCarSummary,
 } from './cars.mapper.js';

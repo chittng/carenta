@@ -17,7 +17,7 @@
   "ignorePatterns": ["**/dist/**", "**/.next/**", "**/generated/**", "**/next-env.d.ts"],
   "rules": {
     "eqeqeq": ["error", "always"],
-    "no-underscore-dangle": ["warn", { "allow": ["_count"] }],
+    "no-underscore-dangle": ["warn", { "allow": ["_count", "_avg", "_all"] }],
     "no-console": [
       "warn",
       {

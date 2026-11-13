@@ -7,6 +7,7 @@ import {
   type OwnerCarSummary,
 } from '@carenta/shared';
 
+import { toDateOnly } from '../common/dates.js';
 import { type Prisma } from '../generated/prisma/client.js';
 import { type UploadsService } from '../storage/uploads.service.js';
 
@@ -51,10 +52,6 @@ export const OWNER_CAR_SUMMARY_SELECT = {
 export type OwnerCarSummaryRecord = Prisma.CarGetPayload<{
   select: typeof OWNER_CAR_SUMMARY_SELECT;
 }>;
-
-/** `@db.Date` columns come back as midnight UTC. */
-export const toDateOnly = (date: Date) => date.toISOString().slice(0, 10);
-export const fromDateOnly = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 type DocumentRecord = OwnerCarRecord['documents'][number];
 type PricingRecord = NonNullable<OwnerCarRecord['pricing']>;

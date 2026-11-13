@@ -42,6 +42,15 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - **[Đề xuất]** Đặt lại hoặc đổi mật khẩu thì các thiết bị khác bị đăng xuất. Tài khoản bị khoá thì mất phiên đăng nhập ngay.
 - **[Đề xuất]** Đăng nhập sai **5 lần trong 15 phút** (theo email và địa chỉ IP) thì phải chờ hết 15 phút. Email xác thực và email đặt lại mật khẩu gửi tối đa **3 lần mỗi giờ** cho mỗi email, mỗi lần cách nhau ít nhất **60 giây**.
 
+### Hồ sơ
+
+- **Hồ sơ riêng** (`/tai-khoan`): họ tên, số điện thoại, ảnh đại diện. Email không đổi được ở đây. **Ngày sinh lấy từ GPLX** đã nộp, hồ sơ không có ô ngày sinh riêng.
+- **Số điện thoại**: tuỳ chọn, không xác minh, không bắt buộc duy nhất. Chỉ nhận số di động Việt Nam, tự chuẩn hoá về dạng `0912345678`. Số điện thoại chỉ hiện cho bên kia sau khi đơn được xác nhận.
+- **Hồ sơ công khai** (`/nguoi-dung/[id]`): họ tên, ảnh đại diện, ngày tham gia, số chuyến, điểm đánh giá, tỉ lệ phản hồi. Không bao giờ có email, số điện thoại, ngày sinh.
+- **Tỉ lệ phản hồi**: % yêu cầu đặt xe (chế độ duyệt tay) mà chủ xe chấp nhận hoặc từ chối trước khi hết hạn 6 giờ, tính trên các yêu cầu tạo trong 90 ngày gần nhất. Yêu cầu còn chờ hoặc bị người thuê huỷ trước khi chủ xe trả lời thì không tính. Chưa có yêu cầu nào thì không hiển thị.
+- **[Đề xuất]** **Số chuyến** là số đơn đã hoàn tất, cộng cả khi thuê và khi cho thuê. **Điểm đánh giá** là trung bình các đánh giá đã công bố mà người đó nhận được, cả với vai trò chủ xe và người thuê, làm tròn một chữ số thập phân.
+- **[Đề xuất]** Tài khoản bị khoá và tài khoản admin không có hồ sơ công khai.
+
 ## 4. Đăng xe (chủ xe)
 
 ### 4.1 Thông tin xe
