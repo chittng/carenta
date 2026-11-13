@@ -1,6 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 
+/** Optional string where `VAR=` (empty, as in .env.example) means unset. */
+const emptyAsUndefined = z
+  .string()
+  .optional()
+  .transform((value) => value || undefined);
+
 /**
  * Environment variables the API reads. Feature modules add their variables here
  * (and to `.env.example`) when they start using them, so a missing value fails at boot.
@@ -27,6 +33,24 @@ export const envSchema = z.object({
   S3_PUBLIC_BASE_URL: z.url({ protocol: /^https?$/ }).transform((url) => url.replace(/\/+$/, '')),
   /** Driver licenses, car documents, trip report photos, dispute evidence, chat images. */
   S3_PRIVATE_BUCKET: z.string().min(1),
+
+  /** Valkey (Redis protocol) for BullMQ: `redis://[user:password@]host:port[/db]`, `rediss://` for TLS. */
+  VALKEY_URL: z.url({ protocol: /^rediss?$/ }),
+  /**
+   * Whether this process runs the background workers (email, scheduled jobs). Off in
+   * tests; could also be turned off on API replicas if workers move to their own process.
+   */
+  JOBS_WORKER: z.stringbool().default(true),
+
+  // SMTP: Mailpit locally, Resend when deployed.
+  SMTP_HOST: z.string().min(1),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65_535),
+  /** TLS from the first byte (port 465). Otherwise STARTTLS is used when the server offers it. */
+  SMTP_SECURE: z.stringbool().default(false),
+  SMTP_USER: emptyAsUndefined,
+  SMTP_PASSWORD: emptyAsUndefined,
+  /** Sender shown to users, e.g. `Carenta <no-reply@carenta.vn>`. */
+  MAIL_FROM: z.string().regex(/@/, { error: 'Thiếu địa chỉ email người gửi' }),
 });
 
 export type Env = z.infer<typeof envSchema>;
