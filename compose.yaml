@@ -1,0 +1,107 @@
+# Local development services. Credentials here are for local use only.
+# Usage: docker compose up -d
+
+name: carenta
+
+services:
+  postgres:
+    image: postgres:18.7-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carenta
+      POSTGRES_PASSWORD: carenta
+      POSTGRES_DB: carenta
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U carenta -d carenta']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  valkey:
+    image: valkey/valkey:9.1.3-alpine
+    restart: unless-stopped
+    # AOF persistence keeps BullMQ jobs across restarts; BullMQ requires noeviction.
+    command: ['valkey-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports:
+      - '6379:6379'
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # S3-compatible object storage (Cloudflare R2 in production).
+  rustfs:
+    image: rustfs/rustfs:1.0.5
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: carenta
+      RUSTFS_SECRET_KEY: carenta-secret
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    ports:
+      - '9000:9000' # S3 API
+      - '9001:9001' # Web console: http://localhost:9001/rustfs/console/
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:9000/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-off job: creates the buckets and makes the public one anonymously readable.
+  # Private documents (driver licenses, car papers) are only served via presigned URLs.
+  rustfs-init:
+    image: amazon/aws-cli:2.40.2
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: carenta
+      AWS_SECRET_ACCESS_KEY: carenta-secret
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://rustfs:9000
+      PUBLIC_BUCKET: carenta-public
+      PRIVATE_BUCKET: carenta-private
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        set -e
+        for bucket in "$$PUBLIC_BUCKET" "$$PRIVATE_BUCKET"; do
+          aws s3api head-bucket --bucket "$$bucket" 2>/dev/null || aws s3api create-bucket --bucket "$$bucket"
+        done
+        aws s3api put-bucket-policy --bucket "$$PUBLIC_BUCKET" --policy "{
+          \"Version\": \"2012-10-17\",
+          \"Statement\": [{
+            \"Effect\": \"Allow\",
+            \"Principal\": {\"AWS\": [\"*\"]},
+            \"Action\": [\"s3:GetObject\"],
+            \"Resource\": [\"arn:aws:s3:::$$PUBLIC_BUCKET/*\"]
+          }]
+        }"
+        echo "Buckets ready: $$PUBLIC_BUCKET (public read), $$PRIVATE_BUCKET (private)"
+    restart: 'no'
+
+  # Catches all outgoing email. Web UI: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    restart: unless-stopped
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # Web UI
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
+  valkey-data:
+  rustfs-data:
