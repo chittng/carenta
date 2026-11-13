@@ -73,7 +73,11 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - Thời gian thuê tối thiểu và tối đa (ví dụ tối thiểu 4 giờ, tối đa 30 ngày).
 - **Phụ phí cuối tuần và ngày lễ** (%, tuỳ chọn).
 - **Giảm giá thuê dài** (tuỳ chọn): % giảm khi thuê từ 7 ngày trở lên.
-- **Cách hệ thống tính tiền**: chia thời gian thuê thành tháng, ngày và giờ, tính theo các đơn vị đã bật, rồi chọn tổng **rẻ nhất cho người thuê**. Ví dụ: số giờ lẻ đã đắt hơn giá một ngày thì tính tròn một ngày.
+- **Cách hệ thống tính tiền**: chia thời gian thuê thành tháng, ngày và giờ, tính theo các đơn vị đã bật, rồi chọn tổng **rẻ nhất cho người thuê**. Ví dụ: số giờ lẻ đã đắt hơn giá một ngày thì tính tròn một ngày. Hai cách bằng tiền nhau thì dùng đơn vị lớn hơn.
+  - **Nửa giờ lẻ** tính nửa giá giờ: 4 giờ 30 phút = 4,5 × giá giờ. Không bật giá giờ thì phần lẻ được làm tròn lên một ngày (hoặc một tháng).
+  - **Phụ phí cuối tuần và ngày lễ tính theo tỷ lệ giờ**: tiền thuê được chia đều cho từng nửa giờ của chuyến; nửa giờ nào rơi vào thứ Bảy, Chủ nhật hoặc ngày lễ (theo giờ Việt Nam) thì cộng phụ phí cho phần đó. Ví dụ: nhận 14:00 thứ Sáu, trả 14:00 Chủ nhật, có 38/48 giờ là cuối tuần. Ngày lễ trùng cuối tuần thì lấy mức cao hơn, không cộng dồn.
+  - **[Đề xuất]** Giảm giá thuê dài áp dụng khi chuyến dài từ đủ 7 ngày (168 giờ), tính trên tiền thuê sau phụ phí, kể cả phần tính theo tháng.
+  - **[Đề xuất]** Phụ phí và giảm giá được làm tròn đến 1.000đ gần nhất. Tiền thuê = giá theo đơn vị + phụ phí − giảm giá. Tổng thanh toán = tiền thuê + phí giao xe + tiền cọc.
 - Thời gian thuê tối thiểu **không ngắn hơn đơn vị nhỏ nhất đang bật**: không bật giá giờ thì tối thiểu 24 giờ; chỉ bật giá tháng thì tối thiểu 30 ngày. Nhờ vậy người thuê không bị tính tròn lên cả ngày hoặc cả tháng cho chuyến ngắn.
 - **[Đề xuất]** Một tháng thuê tính là 30 ngày. Thời gian thuê tối đa không quá 180 ngày.
 - **[Đề xuất]** Mọi số tiền chủ xe nhập đều tròn nghìn đồng. Giới hạn để chặn lỗi nhập: giá giờ 10.000đ–5.000.000đ, giá ngày 100.000đ–50.000.000đ, giá tháng 1.000.000đ–1.000.000.000đ. Phụ phí cuối tuần và ngày lễ từ 1% đến 100%, giảm giá thuê dài từ 1% đến 50%.
@@ -90,6 +94,7 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - **Nhận tại chỗ**: luôn có. Địa chỉ trên trang công khai chỉ hiển thị **gần đúng** (phường/quận, vòng tròn trên bản đồ). Địa chỉ chính xác hiện ra sau khi đơn được xác nhận.
 - **Giao tận nơi** (tuỳ chọn): chủ xe đặt bán kính tối đa (km) và phí giao (đ/km, hoặc miễn phí trong X km).
 - **Phí giao xe** = (khoảng cách − số km miễn phí) × phí mỗi km, không âm. Ví dụ: miễn phí 5 km, 10.000đ/km, giao 8 km → 30.000đ. Số km miễn phí không lớn hơn bán kính giao.
+- **Khoảng cách giao xe** là đường chim bay từ vị trí xe đến địa chỉ giao, làm tròn lên km nguyên. Địa chỉ xa hơn bán kính giao thì không đặt giao xe được.
 - **[Đề xuất]** Bán kính giao tối đa 50 km, phí giao từ 0 đến 100.000đ mỗi km.
 
 ### 4.5 Chế độ duyệt đơn
