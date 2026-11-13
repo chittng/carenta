@@ -31,6 +31,16 @@ const randomPlate = () => {
 };
 const nextYear = () => `${Number(vietnamDate().slice(0, 4)) + 1}-12-31`;
 
+/** Daily price only: the simplest valid price list. */
+const dailyPricing = (overrides: Record<string, unknown> = {}) => ({
+  hourlyPrice: null,
+  dailyPrice: 800_000,
+  monthlyPrice: null,
+  minDurationHours: 24,
+  maxDurationDays: 30,
+  ...overrides,
+});
+
 /**
  * Owner car management over HTTP against Postgres and RustFS (real uploads). Needs
  * `docker compose up -d` and `pnpm db:migrate`; run with INTEGRATION=1.
@@ -192,9 +202,14 @@ describe.runIf(process.env.INTEGRATION === '1')('owner cars', () => {
       .expect(status);
   }
 
+  function putPricing(agent: Agent, carId: string, body: Record<string, unknown>) {
+    return agent.put(`/api/v1/owner/cars/${carId}/pricing`).send(body);
+  }
+
   /** A car that passed review: what Console will do in CARENTA-15. */
   async function approvedCar(agent: Agent) {
     const car = await createCar(agent);
+    await putPricing(agent, car.id, dailyPricing()).expect(200);
     await addPhotos(agent, car.id, 4);
     await putDocument(agent, car.id, 'REGISTRATION');
     await putDocument(agent, car.id, 'INSPECTION', { expiresOn: nextYear() });
@@ -343,6 +358,7 @@ describe.runIf(process.env.INTEGRATION === '1')('owner cars', () => {
       expect(errorOf(early)).toMatchObject({ code: ErrorCode.CAR_INCOMPLETE });
       expect(errorOf(early).details?.map((d) => d.path)).toEqual([
         'photos',
+        'pricing',
         'documents.REGISTRATION',
         'documents.INSPECTION',
       ]);
@@ -372,6 +388,10 @@ describe.runIf(process.env.INTEGRATION === '1')('owner cars', () => {
       ]);
       // Private: only through the presigned URL.
       expect((await fetch(withDocs.documents[0]!.url)).status).toBe(200);
+
+      const noPricing = await agent.post(`/api/v1/owner/cars/${car.id}/submit`).expect(422);
+      expect(errorOf(noPricing).details?.map((d) => d.path)).toEqual(['pricing']);
+      await putPricing(agent, car.id, dailyPricing()).expect(200);
 
       const submitted = carOf(await agent.post(`/api/v1/owner/cars/${car.id}/submit`).expect(200));
       expect(submitted.status).toBe('PENDING_REVIEW');
@@ -526,8 +546,176 @@ describe.runIf(process.env.INTEGRATION === '1')('owner cars', () => {
         .patch(`/api/v1/owner/cars/${car.id}`)
         .send({ color: 'Đỏ' })
         .expect(409);
-
       expect(errorOf(res).code).toBe(ErrorCode.CAR_STATUS_CONFLICT);
+
+      const pricing = await putPricing(agent, car.id, dailyPricing()).expect(409);
+      expect(errorOf(pricing).code).toBe(ErrorCode.CAR_STATUS_CONFLICT);
+    });
+  });
+
+  describe('rental terms', () => {
+    it('starts a draft with the default settings and no price list', async () => {
+      const { agent } = await signUp();
+
+      const car = await createCar(agent);
+
+      expect(car).toMatchObject({
+        instantBook: false,
+        depositAmount: 5_000_000,
+        bufferMinutes: 120,
+        delivery: null,
+        pricing: null,
+      });
+      const list = z
+        .array(ownerCarSummarySchema)
+        .parse((await agent.get('/api/v1/owner/cars').expect(200)).body);
+      expect(list[0]).toMatchObject({ id: car.id, hasPricing: false });
+    });
+
+    it('sets and replaces the price list; the late fee defaults to 10% of the daily price', async () => {
+      const { agent } = await signUp();
+      const car = await createCar(agent);
+
+      const daily = carOf(await putPricing(agent, car.id, dailyPricing()).expect(200));
+      expect(daily.pricing).toEqual({
+        hourlyPrice: null,
+        dailyPrice: 800_000,
+        monthlyPrice: null,
+        minDurationHours: 24,
+        maxDurationDays: 30,
+        weekendSurchargePercent: null,
+        holidaySurchargePercent: null,
+        longRentalDiscountPercent: null,
+        lateFeePerHour: null,
+        effectiveLateFeePerHour: 80_000,
+      });
+
+      const full = carOf(
+        await putPricing(agent, car.id, {
+          hourlyPrice: 120_000,
+          dailyPrice: 900_000,
+          monthlyPrice: 18_000_000,
+          minDurationHours: 4,
+          maxDurationDays: 60,
+          weekendSurchargePercent: 10,
+          holidaySurchargePercent: 20,
+          longRentalDiscountPercent: 15,
+          lateFeePerHour: 150_000,
+        }).expect(200),
+      );
+      expect(full.pricing).toMatchObject({
+        hourlyPrice: 120_000,
+        minDurationHours: 4,
+        longRentalDiscountPercent: 15,
+        lateFeePerHour: 150_000,
+        effectiveLateFeePerHour: 150_000,
+      });
+      expect(await prisma.carPricing.count({ where: { carId: car.id } })).toBe(1);
+
+      const list = z
+        .array(ownerCarSummarySchema)
+        .parse((await agent.get('/api/v1/owner/cars').expect(200)).body);
+      expect(list[0]).toMatchObject({ id: car.id, hasPricing: true });
+
+      const stranger = (await signUp()).agent;
+      await putPricing(stranger, car.id, dailyPricing()).expect(404);
+    });
+
+    it.each([
+      [
+        'no unit turned on',
+        { dailyPrice: null },
+        'dailyPrice',
+        'Bật ít nhất một đơn vị giá: theo giờ, theo ngày hoặc theo tháng.',
+      ],
+      [
+        'a trip shorter than a day without an hourly price',
+        { minDurationHours: 4 },
+        'minDurationHours',
+        'Xe không có giá theo giờ nên thời gian thuê tối thiểu phải từ 24 giờ.',
+      ],
+      [
+        'no daily price and no late fee',
+        { dailyPrice: null, hourlyPrice: 100_000, minDurationHours: 4 },
+        'lateFeePerHour',
+        'Xe không có giá theo ngày nên cần nhập phí trả trễ mỗi giờ.',
+      ],
+      [
+        'an amount that is not a whole thousand',
+        { dailyPrice: 850_500 },
+        'dailyPrice',
+        'Giá theo ngày phải tròn nghìn đồng.',
+      ],
+    ])('refuses a price list with %s', async (_case, overrides, path, message) => {
+      const { agent } = await signUp();
+      const car = await createCar(agent);
+
+      const res = await putPricing(agent, car.id, dailyPricing(overrides)).expect(400);
+
+      expect(errorOf(res)).toMatchObject({
+        code: ErrorCode.VALIDATION_FAILED,
+        details: [{ path, message }],
+      });
+    });
+
+    it('edits instant book, deposit, buffer and delivery like other details', async () => {
+      const { agent } = await signUp();
+      const car = await createCar(agent, {
+        instantBook: true,
+        delivery: { maxRadiusKm: 10, feePerKm: 10_000, freeRadiusKm: 3 },
+      });
+      expect(car).toMatchObject({
+        instantBook: true,
+        delivery: { maxRadiusKm: 10, feePerKm: 10_000, freeRadiusKm: 3 },
+      });
+
+      const updated = carOf(
+        await agent
+          .patch(`/api/v1/owner/cars/${car.id}`)
+          .send({ depositAmount: 0, bufferMinutes: 180, delivery: null })
+          .expect(200),
+      );
+      expect(updated).toMatchObject({
+        instantBook: true,
+        depositAmount: 0,
+        bufferMinutes: 180,
+        delivery: null,
+      });
+
+      const invalid = await agent
+        .patch(`/api/v1/owner/cars/${car.id}`)
+        .send({
+          depositAmount: 60_000_000,
+          bufferMinutes: 45,
+          delivery: { maxRadiusKm: 5, feePerKm: 10_000, freeRadiusKm: 8 },
+        })
+        .expect(400);
+      expect(errorOf(invalid).details?.map((d) => d.path)).toEqual([
+        'depositAmount',
+        'bufferMinutes',
+        'delivery.freeRadiusKm',
+      ]);
+    });
+
+    it('applies price and settings changes to an approved car without another review', async () => {
+      const { agent } = await signUp();
+      const car = await approvedCar(agent);
+
+      await putPricing(agent, car.id, dailyPricing({ dailyPrice: 1_000_000 })).expect(200);
+      const updated = carOf(
+        await agent
+          .patch(`/api/v1/owner/cars/${car.id}`)
+          .send({ instantBook: true, depositAmount: 3_000_000 })
+          .expect(200),
+      );
+
+      expect(updated).toMatchObject({
+        status: 'ACTIVE',
+        instantBook: true,
+        depositAmount: 3_000_000,
+        pricing: { dailyPrice: 1_000_000, effectiveLateFeePerHour: 100_000 },
+        revision: null,
+      });
     });
   });
 });

@@ -40,21 +40,23 @@ describe('missingForSubmission', () => {
   const now = new Date('2026-11-14T16:30:00Z');
   const complete = {
     photoCount: 4,
+    hasPricing: true,
     documents: [
       { type: 'REGISTRATION', expiresOn: null },
       { type: 'INSPECTION', expiresOn: '2026-11-14' },
     ],
   } as const;
 
-  it('accepts 4 photos, the registration and an inspection valid through today', () => {
+  it('accepts 4 photos, a price list, the registration and an inspection valid through today', () => {
     expect(missingForSubmission({ ...complete, documents: [...complete.documents] }, now)).toEqual(
       [],
     );
   });
 
   it('lists everything that is missing', () => {
-    expect(missingForSubmission({ photoCount: 3, documents: [] }, now)).toEqual([
+    expect(missingForSubmission({ photoCount: 3, hasPricing: false, documents: [] }, now)).toEqual([
       { path: 'photos', message: 'Cần ít nhất 4 ảnh xe.' },
+      { path: 'pricing', message: 'Cần thiết lập bảng giá.' },
       { path: 'documents.REGISTRATION', message: 'Cần ảnh giấy đăng ký xe.' },
       { path: 'documents.INSPECTION', message: 'Cần ảnh giấy đăng kiểm.' },
     ]);
@@ -68,7 +70,9 @@ describe('missingForSubmission', () => {
     // 15 Nov 00:30 in Vietnam
     const nextDay = new Date('2026-11-14T17:30:00Z');
 
-    expect(missingForSubmission({ photoCount: 4, documents: [...documents] }, nextDay)).toEqual([
+    expect(
+      missingForSubmission({ photoCount: 4, hasPricing: true, documents: [...documents] }, nextDay),
+    ).toEqual([
       {
         path: 'documents.INSPECTION',
         message: 'Giấy đăng kiểm đã hết hạn. Vui lòng tải lên giấy đăng kiểm mới.',

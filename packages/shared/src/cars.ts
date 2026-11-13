@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import {
+  carDeliveryViewSchema,
+  carPricingViewSchema,
+  rentalSettingsFields,
+} from './rental-terms.js';
 import { vietnamDate, vietnamYear } from './time.js';
 
 // ─── Rules (spec §4.1, §12.3) ───────────────────────────────────────────────
@@ -184,11 +189,14 @@ const carFields = {
     .array(idSchema)
     .max(50)
     .refine((ids) => new Set(ids).size === ids.length, { error: 'Tiện nghi bị trùng.' }),
+  ...rentalSettingsFields,
 };
 
 /**
  * Creating a car saves a draft (decided 2026-11-14): the basic details and the address are
- * required up front; photos, documents and amenities can be added in later steps.
+ * required up front; photos, documents, amenities and the price list can come later. Rental
+ * settings left out keep their defaults: approval by the owner, 5.000.000đ deposit, 2-hour
+ * buffer, no delivery.
  */
 export const createCarSchema = z.object({
   ...carFields,
@@ -197,6 +205,10 @@ export const createCarSchema = z.object({
   rules: carRulesSchema.optional(),
   mileageLimit: carFields.mileageLimit.optional(),
   amenityIds: carFields.amenityIds.optional(),
+  instantBook: carFields.instantBook.optional(),
+  depositAmount: carFields.depositAmount.optional(),
+  bufferMinutes: carFields.bufferMinutes.optional(),
+  delivery: carFields.delivery.optional(),
 });
 
 /**
@@ -317,6 +329,13 @@ export const ownerCarSchema = z.object({
     longitude: z.number(),
   }),
   amenities: z.array(amenitySchema),
+  instantBook: z.boolean(),
+  depositAmount: z.int(),
+  bufferMinutes: z.int(),
+  /** Null: pickup at the car only. */
+  delivery: carDeliveryViewSchema.nullable(),
+  /** Null until the owner sets a price list, which is needed to submit the car. */
+  pricing: carPricingViewSchema.nullable(),
   photos: z.array(carPhotoSchema),
   documents: z.array(carDocumentSchema),
   /** The pending revision, or the latest one if it was rejected; null otherwise. */
@@ -334,6 +353,7 @@ export const ownerCarSummarySchema = z.object({
   licensePlate: z.string(),
   coverPhoto: carPhotoUrlsSchema.nullable(),
   photoCount: z.int(),
+  hasPricing: z.boolean(),
   hasPendingRevision: z.boolean(),
   createdAt: timestamp,
   updatedAt: timestamp,

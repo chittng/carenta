@@ -52,7 +52,7 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - **Mô tả** tự do.
 - **Quy định xe** (bật/tắt từng mục, có thể ghi chú thêm): không hút thuốc, không chở thú cưng, không chở sầu riêng/hải sản, trả xe với mức nhiên liệu như lúc nhận, giữ vệ sinh xe.
 - **Giới hạn km** (tuỳ chọn): số km/ngày và phụ phí cho mỗi km vượt.
-- **Lưu nháp và gửi duyệt**: lần lưu đầu tiên cần đủ thông tin cơ bản và địa chỉ xe. Ảnh, giấy tờ và tiện nghi có thể bổ sung ở các bước sau. Muốn gửi duyệt thì xe phải có 4–15 ảnh, giấy đăng ký và giấy đăng kiểm còn hạn (ngày hết hạn từ hôm nay trở đi). Xe bị từ chối thì chủ xe sửa rồi gửi duyệt lại.
+- **Lưu nháp và gửi duyệt**: lần lưu đầu tiên cần đủ thông tin cơ bản và địa chỉ xe. Ảnh, giấy tờ và tiện nghi có thể bổ sung ở các bước sau. Muốn gửi duyệt thì xe phải có 4–15 ảnh, bảng giá, giấy đăng ký và giấy đăng kiểm còn hạn (ngày hết hạn từ hôm nay trở đi). Xe bị từ chối thì chủ xe sửa rồi gửi duyệt lại.
 - **Năm sản xuất**: không giới hạn tuổi xe. Hệ thống chỉ nhận năm từ 1990 đến năm sau để chặn lỗi nhập.
 - **Xoá xe**: chỉ xoá được xe chưa từng được duyệt (nháp hoặc bị từ chối). Xe đã từng hiển thị chỉ tạm ngưng được, để giữ lịch sử đơn và đánh giá.
 - **[Đề xuất]** Biển số theo dạng `51K-123.45` (hoặc `51K-1234` với biển cũ 4 số); hệ thống tự chuẩn hoá khi nhập. Mỗi biển số chỉ thuộc một xe, kể cả biển số đang nằm trong bản sửa chờ duyệt. Không nhận biển ngoại giao.
@@ -65,18 +65,23 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - **Phụ phí cuối tuần và ngày lễ** (%, tuỳ chọn).
 - **Giảm giá thuê dài** (tuỳ chọn): % giảm khi thuê từ 7 ngày trở lên.
 - **Cách hệ thống tính tiền**: chia thời gian thuê thành tháng, ngày và giờ, tính theo các đơn vị đã bật, rồi chọn tổng **rẻ nhất cho người thuê**. Ví dụ: số giờ lẻ đã đắt hơn giá một ngày thì tính tròn một ngày.
+- Thời gian thuê tối thiểu **không ngắn hơn đơn vị nhỏ nhất đang bật**: không bật giá giờ thì tối thiểu 24 giờ; chỉ bật giá tháng thì tối thiểu 30 ngày. Nhờ vậy người thuê không bị tính tròn lên cả ngày hoặc cả tháng cho chuyến ngắn.
+- **[Đề xuất]** Một tháng thuê tính là 30 ngày. Thời gian thuê tối đa không quá 180 ngày.
+- **[Đề xuất]** Mọi số tiền chủ xe nhập đều tròn nghìn đồng. Giới hạn để chặn lỗi nhập: giá giờ 10.000đ–5.000.000đ, giá ngày 100.000đ–50.000.000đ, giá tháng 1.000.000đ–1.000.000.000đ. Phụ phí cuối tuần và ngày lễ từ 1% đến 100%, giảm giá thuê dài từ 1% đến 50%.
 
 ### 4.3 Lịch trống **[Đề xuất]**
 
 - Mặc định xe **luôn trống**.
 - Chủ xe có thể **chặn** khoảng ngày giờ (xe bận, đi bảo dưỡng) trên lịch.
-- Hệ thống tự chặn những khoảng đã có đơn xác nhận. Thêm **thời gian đệm** giữa hai chuyến do chủ xe chọn (mặc định 2 giờ) để vệ sinh xe.
+- Hệ thống tự chặn những khoảng đã có đơn xác nhận. Thêm **thời gian đệm** giữa hai chuyến do chủ xe chọn (mặc định 2 giờ, từ 0 đến 24 giờ theo bước 30 phút) để vệ sinh xe.
 - Đơn **chiếm lịch** khi ở trạng thái CHỜ_THANH_TOÁN, ĐÃ_XÁC_NHẬN hoặc ĐANG_THUÊ, tính từ giờ nhận xe đến giờ trả xe cộng thời gian đệm. Đơn **CHỜ_DUYỆT không chiếm lịch**: nhiều người có thể gửi yêu cầu trùng giờ, chủ xe chấp nhận đơn nào trước thì đơn đó giữ lịch, các yêu cầu trùng còn lại không chấp nhận được nữa. Thời gian đệm được chốt vào đơn lúc đặt.
 
 ### 4.4 Giao nhận xe **[Đề xuất]**
 
 - **Nhận tại chỗ**: luôn có. Địa chỉ trên trang công khai chỉ hiển thị **gần đúng** (phường/quận, vòng tròn trên bản đồ). Địa chỉ chính xác hiện ra sau khi đơn được xác nhận.
 - **Giao tận nơi** (tuỳ chọn): chủ xe đặt bán kính tối đa (km) và phí giao (đ/km, hoặc miễn phí trong X km).
+- **Phí giao xe** = (khoảng cách − số km miễn phí) × phí mỗi km, không âm. Ví dụ: miễn phí 5 km, 10.000đ/km, giao 8 km → 30.000đ. Số km miễn phí không lớn hơn bán kính giao.
+- **[Đề xuất]** Bán kính giao tối đa 50 km, phí giao từ 0 đến 100.000đ mỗi km.
 
 ### 4.5 Chế độ duyệt đơn
 
@@ -87,7 +92,7 @@ Chủ xe chọn cho từng xe:
 
 ### 4.6 Tiền cọc **[Đề xuất]**
 
-- Chủ xe đặt mức cọc, mặc định 5.000.000đ, cho phép từ 0 đến 50.000.000đ.
+- Chủ xe đặt mức cọc, mặc định 5.000.000đ, cho phép từ 0 đến 50.000.000đ (tròn nghìn đồng).
 - Người thuê thanh toán **tiền thuê + phí giao xe + cọc** cùng một lần qua web. Carenta giữ toàn bộ số tiền này.
 - Cọc được hoàn **72 giờ sau khi trả xe** nếu không có khiếu nại (xem mục 7).
 
@@ -212,7 +217,7 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 ### 12.3 Thay đổi thông tin xe
 
 - **Phải được admin duyệt lại**: biển số, giấy tờ xe, hãng/dòng/năm sản xuất. Trong thời gian chờ duyệt, xe vẫn hiển thị bằng thông tin cũ.
-- **Không cần duyệt lại**: giá, ảnh, mô tả, tiện nghi, lịch trống.
+- **Không cần duyệt lại**: giá, ảnh, mô tả, tiện nghi, lịch trống, cấu hình cho thuê (chế độ duyệt đơn, cọc, thời gian đệm, giao xe).
 - Chủ xe có thể **tạm ngưng** xe. Khi đó xe bị ẩn khỏi kết quả tìm kiếm, các đơn đã xác nhận vẫn giữ nguyên.
 - Mỗi xe có **tối đa một bản thay đổi chờ duyệt**. Chủ xe sửa tiếp thì bản đó được ghi đè; sửa về giá trị cũ thì thay đổi đó bị bỏ. Chủ xe có thể huỷ bản đang chờ. Admin từ chối thì bản sửa bị bỏ, xe giữ thông tin cũ và chủ xe thấy lý do từ chối.
 - **[Đề xuất]** Xe đang chờ duyệt lần đầu chưa hiển thị công khai, nên mọi thay đổi áp dụng ngay. Admin duyệt theo thông tin tại thời điểm duyệt.
@@ -222,7 +227,7 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 ### 12.4 Trong chuyến
 
 - **Giữ chỗ khi thanh toán**: khi người thuê vào cổng thanh toán, lịch xe được giữ 15 phút. Quá 15 phút chưa thanh toán thì đơn tự huỷ.
-- **Trả xe trễ**: được ân hạn 30 phút. Sau đó tính phí trả trễ theo từng giờ, làm tròn lên. Mức phí do chủ xe đặt, mặc định bằng 10% giá ngày mỗi giờ. Phí này trừ vào cọc.
+- **Trả xe trễ**: được ân hạn 30 phút. Sau đó tính phí trả trễ theo từng giờ, làm tròn lên. Mức phí do chủ xe đặt, mặc định bằng 10% giá ngày mỗi giờ. Xe không bật giá ngày thì chủ xe bắt buộc nhập mức phí này. Phí này trừ vào cọc.
 - **Gia hạn chuyến**: người thuê gửi yêu cầu gia hạn khi đang thuê. Lịch phải còn trống và chủ xe chấp nhận. Người thuê thanh toán phần tiền chênh qua VNPay.
 - **Chủ xe không giao xe**: người thuê báo trong vòng 2 giờ sau giờ nhận xe. Người thuê được hoàn 100%, chủ xe bị tính một lần huỷ.
 - **Người thuê không đến nhận xe**: sau 2 giờ, chủ xe đánh dấu "không đến". Đơn được xử lý như huỷ trước dưới 24 giờ.

@@ -27,6 +27,7 @@ import { z } from 'zod';
 import {
   addCarPhotoSchema,
   carDocumentTypeParamSchema,
+  carPricingSchema,
   createCarSchema,
   ownerCarSchema,
   ownerCarSummarySchema,
@@ -45,6 +46,7 @@ class UpdateCarDto extends createZodDto(updateCarSchema) {}
 class AddCarPhotoDto extends createZodDto(addCarPhotoSchema) {}
 class ReorderCarPhotosDto extends createZodDto(reorderCarPhotosSchema) {}
 class PutCarDocumentDto extends createZodDto(putCarDocumentSchema) {}
+class PutCarPricingDto extends createZodDto(carPricingSchema) {}
 class OwnerCarDto extends createZodDto(ownerCarSchema) {}
 class OwnerCarSummaryListDto extends createZodDto(z.array(ownerCarSummarySchema)) {}
 class CarParamsDto extends createZodDto(z.object({ id: z.uuid() })) {}
@@ -77,7 +79,7 @@ export class OwnerCarsController {
   @ApiOperation({
     summary: 'Tạo xe (lưu nháp)',
     description:
-      'Bước đầu của đăng xe: cần đủ thông tin cơ bản và địa chỉ. Ảnh, giấy tờ thêm ở các bước sau, rồi gọi `submit` để gửi duyệt.',
+      'Bước đầu của đăng xe: cần đủ thông tin cơ bản và địa chỉ. Ảnh, giấy tờ, bảng giá thêm ở các bước sau, rồi gọi `submit` để gửi duyệt. Không gửi thì dùng mặc định: duyệt tay, cọc 5.000.000đ, đệm 2 giờ, không giao xe.',
   })
   @ZodResponse({ status: 201, description: 'Xe nháp vừa tạo', type: OwnerCarDto })
   @ApiConflictResponse({ description: 'LICENSE_PLATE_TAKEN', type: ErrorResponseDto })
@@ -98,7 +100,8 @@ export class OwnerCarsController {
   @ApiOperation({
     summary: 'Sửa thông tin xe',
     description: [
-      'Chỉ gửi các trường cần đổi; `rules`, `mileageLimit`, `location`, `amenityIds` được thay cả cụm.',
+      'Chỉ gửi các trường cần đổi; `rules`, `mileageLimit`, `location`, `amenityIds`, `delivery` được thay cả cụm.',
+      'Cấu hình cho thuê: `instantBook` (Đặt nhanh), `depositAmount` (0–50.000.000đ, tròn nghìn), `bufferMinutes` (0–1440, bước 30), `delivery` (`null` = chỉ nhận tại chỗ).',
       '',
       'Xe chưa từng được duyệt: mọi thay đổi áp dụng ngay.',
       'Xe đã duyệt: `licensePlate`, `modelId`, `year` vào bản chờ admin duyệt lại (`revision`), xe vẫn hiển thị thông tin cũ; sửa tiếp thì ghi đè bản chờ. Các trường khác áp dụng ngay.',
@@ -134,7 +137,7 @@ export class OwnerCarsController {
   @ApiOperation({
     summary: 'Gửi duyệt',
     description:
-      'Xe nháp hoặc bị từ chối → chờ duyệt. Cần 4–15 ảnh, giấy đăng ký và giấy đăng kiểm còn hạn; thiếu thì trả `CAR_INCOMPLETE` kèm `details`.',
+      'Xe nháp hoặc bị từ chối → chờ duyệt. Cần 4–15 ảnh, bảng giá, giấy đăng ký và giấy đăng kiểm còn hạn; thiếu thì trả `CAR_INCOMPLETE` kèm `details`.',
   })
   @ZodResponse({ status: 200, description: 'Xe đang chờ duyệt', type: OwnerCarDto })
   @ApiNotFoundResponse({ ...NOT_FOUND, type: ErrorResponseDto })
@@ -165,6 +168,28 @@ export class OwnerCarsController {
   @ApiConflictResponse({ description: 'CAR_STATUS_CONFLICT', type: ErrorResponseDto })
   resume(@CurrentAuth() auth: RequestAuth, @Param() params: CarParamsDto): Promise<OwnerCarDto> {
     return this.cars.resume(auth.user.id, params.id);
+  }
+
+  @Put(':id/pricing')
+  @ApiOperation({
+    summary: 'Đặt bảng giá',
+    description: [
+      'Thay cả bảng giá. Giá `null` là tắt đơn vị đó; phải bật ít nhất một trong giờ/ngày/tháng. Mọi số tiền tròn nghìn đồng.',
+      'Thời gian thuê tối thiểu không ngắn hơn đơn vị nhỏ nhất đang bật (không có giá giờ: từ 24 giờ; chỉ có giá tháng: từ 30 ngày).',
+      '`lateFeePerHour` để `null` thì bằng 10% giá ngày; xe không có giá ngày phải nhập.',
+      '',
+      'Không cần duyệt lại; đơn đã đặt giữ giá cũ.',
+    ].join('\n'),
+  })
+  @ZodResponse({ status: 200, description: 'Xe sau khi đặt giá', type: OwnerCarDto })
+  @ApiNotFoundResponse({ ...NOT_FOUND, type: ErrorResponseDto })
+  @ApiConflictResponse({ description: REMOVED, type: ErrorResponseDto })
+  putPricing(
+    @CurrentAuth() auth: RequestAuth,
+    @Param() params: CarParamsDto,
+    @Body() body: PutCarPricingDto,
+  ): Promise<OwnerCarDto> {
+    return this.cars.putPricing(auth.user.id, params.id, body);
   }
 
   @Post(':id/photos')
