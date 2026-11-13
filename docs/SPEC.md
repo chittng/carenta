@@ -250,7 +250,7 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 | Thanh toán           | VNPay sandbox                                                              |
 | Bản đồ               | Leaflet + OpenStreetMap. Gợi ý địa chỉ bằng Nominatim                      |
 | Xác thực             | Email + mật khẩu, JWT (access + refresh token qua httpOnly cookie)         |
-| Kiểm thử             | Jest (API), Playwright (E2E cho các luồng chính)                           |
+| Kiểm thử             | Vitest (API và `packages/shared`), Playwright (E2E cho các luồng chính)    |
 | Môi trường           | Docker Compose cho local (Postgres, Redis, MinIO, Mailpit)                 |
 | Deploy **[Đề xuất]** | Web lên Vercel. API, Postgres, Redis lên Railway hoặc Render               |
 
