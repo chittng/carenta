@@ -1,3 +1,13 @@
+// Carenta data model v1. Product source of truth: docs/SPEC.md §15.
+//
+// Conventions:
+// - Tables and columns are snake_case (@@map / @map); models are PascalCase.
+// - Money is integer VND. Booking amounts use Int (a single booking stays far below 2^31);
+//   wallet balances and the ledger use BigInt because they accumulate without bound.
+// - Timestamps are timestamptz in UTC. Calendar dates (holidays, license expiry) are DATE and
+//   are interpreted in Asia/Ho_Chi_Minh.
+// - Constraints Prisma cannot express (exclusion, CHECK) live in the migration SQL.
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -5,4 +15,942 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── Users and verification ─────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+}
+
+model User {
+  id              String     @id @default(uuid(7)) @db.Uuid
+  email           String     @unique
+  emailVerifiedAt DateTime?  @map("email_verified_at") @db.Timestamptz(3)
+  passwordHash    String     @map("password_hash")
+  fullName        String     @map("full_name")
+  phone           String?
+  avatarKey       String?    @map("avatar_key")
+  role            UserRole   @default(USER)
+  status          UserStatus @default(ACTIVE)
+  lockedAt        DateTime?  @map("locked_at") @db.Timestamptz(3)
+  lockReason      String?    @map("lock_reason")
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  driverLicense          DriverLicense?
+  wallet                 Wallet?
+  bankAccount            BankAccount?
+  withdrawalRequests     WithdrawalRequest[]
+  cars                   Car[]
+  bookingsAsRenter       Booking[]           @relation("BookingRenter")
+  bookingsAsOwner        Booking[]           @relation("BookingOwner")
+  conversationsAsRenter  Conversation[]      @relation("ConversationRenter")
+  conversationsAsOwner   Conversation[]      @relation("ConversationOwner")
+  messages               Message[]
+  reviewsWritten         Review[]            @relation("ReviewAuthor")
+  reviewsReceived        Review[]            @relation("ReviewSubject")
+  disputesOpened         Dispute[]           @relation("DisputeOpenedBy")
+  disputeEvidence        DisputeEvidence[]
+  tripReportsCreated     TripReport[]        @relation("TripReportCreatedBy")
+  tripReportsConfirmed   TripReport[]        @relation("TripReportConfirmedBy")
+  bookingStatusLogs      BookingStatusLog[]
+  notifications          Notification[]
+  // Admin actions
+  reviewedDriverLicenses DriverLicense[]     @relation("DriverLicenseReviewer")
+  reviewedCars           Car[]               @relation("CarReviewer")
+  reviewedWithdrawals    WithdrawalRequest[] @relation("WithdrawalReviewer")
+  resolvedDisputes       Dispute[]           @relation("DisputeResolver")
+  updatedSettings        PlatformSetting[]
+
+  @@map("users")
+}
+
+enum DriverLicenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  // An approved license past its expiry date goes back to "not verified" (spec §12.2).
+  EXPIRED
+}
+
+// Car-capable classes only. LEGACY_* are classes issued under the pre-2025 law;
+// LEGACY_B1 is the old automatic-only class (spec §12.2).
+enum DriverLicenseClass {
+  B
+  C1
+  C
+  D1
+  D2
+  D
+  BE
+  C1E
+  CE
+  D1E
+  D2E
+  DE
+  LEGACY_B1
+  LEGACY_B2
+  LEGACY_C
+  LEGACY_D
+  LEGACY_E
+  LEGACY_FB2
+  LEGACY_FC
+  LEGACY_FD
+  LEGACY_FE
+}
+
+model DriverLicense {
+  id              String              @id @default(uuid(7)) @db.Uuid
+  userId          String              @unique @map("user_id") @db.Uuid
+  fullName        String              @map("full_name")
+  licenseNumber   String              @map("license_number")
+  licenseClass    DriverLicenseClass  @map("license_class")
+  dateOfBirth     DateTime            @map("date_of_birth") @db.Date
+  expiresOn       DateTime?           @map("expires_on") @db.Date // null: no expiry
+  // Object keys in the private bucket
+  frontImageKey   String              @map("front_image_key")
+  backImageKey    String              @map("back_image_key")
+  status          DriverLicenseStatus @default(PENDING)
+  rejectionReason String?             @map("rejection_reason")
+  submittedAt     DateTime            @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  reviewedById    String?             @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime?           @map("reviewed_at") @db.Timestamptz(3)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("DriverLicenseReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, submittedAt])
+  @@index([licenseNumber])
+  @@map("driver_licenses")
+}
+
+// ─── Wallet (owners only) ───────────────────────────────────────────────────
+
+model Wallet {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  // Must always equal SUM(wallet_transactions.amount). CHECK (balance >= 0) in SQL.
+  balance   BigInt   @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+enum WalletTransactionType {
+  // Rent minus commission, plus surcharges, credited when a booking completes
+  BOOKING_PAYOUT
+  // Owner's share when a renter cancels 24–48 h before pickup
+  CANCELLATION_PAYOUT
+  WITHDRAWAL
+  // Credit back when a withdrawal request is rejected after being debited
+  WITHDRAWAL_REVERSAL
+  ADJUSTMENT
+}
+
+// Append-only ledger. Every balance change writes one row in the same DB transaction.
+model WalletTransaction {
+  id                  String                @id @default(uuid(7)) @db.Uuid
+  walletId            String                @map("wallet_id") @db.Uuid
+  type                WalletTransactionType
+  // Signed: positive credits, negative debits
+  amount              BigInt
+  balanceAfter        BigInt                @map("balance_after")
+  bookingId           String?               @map("booking_id") @db.Uuid
+  withdrawalRequestId String?               @map("withdrawal_request_id") @db.Uuid
+  description         String?
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  wallet            Wallet             @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  booking           Booking?           @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  withdrawalRequest WithdrawalRequest? @relation(fields: [withdrawalRequestId], references: [id], onDelete: Restrict)
+
+  @@index([walletId, createdAt])
+  @@index([bookingId])
+  @@index([withdrawalRequestId])
+  @@map("wallet_transactions")
+}
+
+model BankAccount {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  userId            String   @unique @map("user_id") @db.Uuid
+  bankCode          String   @map("bank_code") // e.g. VCB, TCB
+  bankName          String   @map("bank_name")
+  accountNumber     String   @map("account_number")
+  accountHolderName String   @map("account_holder_name")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bank_accounts")
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
+}
+
+model WithdrawalRequest {
+  id                String           @id @default(uuid(7)) @db.Uuid
+  userId            String           @map("user_id") @db.Uuid
+  amount            Int
+  status            WithdrawalStatus @default(PENDING)
+  // Bank details are copied so later edits to the bank account do not change the request
+  bankCode          String           @map("bank_code")
+  bankName          String           @map("bank_name")
+  accountNumber     String           @map("account_number")
+  accountHolderName String           @map("account_holder_name")
+  rejectionReason   String?          @map("rejection_reason")
+  reviewedById      String?          @map("reviewed_by_id") @db.Uuid
+  reviewedAt        DateTime?        @map("reviewed_at") @db.Timestamptz(3)
+  paidAt            DateTime?        @map("paid_at") @db.Timestamptz(3)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  reviewedBy         User?               @relation("WithdrawalReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  walletTransactions WalletTransaction[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@map("withdrawal_requests")
+}
+
+// ─── Catalogue (managed in Console, seeded) ─────────────────────────────────
+
+model CarMake {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  models CarModel[]
+
+  @@map("car_makes")
+}
+
+model CarModel {
+  id        Int      @id @default(autoincrement())
+  makeId    Int      @map("make_id")
+  name      String
+  slug      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  make CarMake @relation(fields: [makeId], references: [id], onDelete: Restrict)
+  cars Car[]
+
+  @@unique([makeId, name])
+  @@unique([makeId, slug])
+  @@map("car_models")
+}
+
+model Amenity {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique // stable key used by code, e.g. CAMERA_360
+  name      String // Vietnamese display name
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cars CarAmenity[]
+
+  @@map("amenities")
+}
+
+// Days that carry the holiday surcharge (spec §4.2, §12.1). One row per calendar day.
+model Holiday {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @unique @db.Date
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("holidays")
+}
+
+// Platform-wide configuration edited in Console, e.g. commission_rate_percent.
+model PlatformSetting {
+  key         String   @id
+  value       Json
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("platform_settings")
+}
+
+// ─── Cars ───────────────────────────────────────────────────────────────────
+
+enum CarStatus {
+  DRAFT
+  PENDING_REVIEW
+  REJECTED
+  // Approved and listed
+  ACTIVE
+  // Paused by the owner (spec §12.3)
+  PAUSED
+  // Hidden by an admin, can be restored
+  HIDDEN
+  // Taken down by an admin
+  REMOVED
+}
+
+enum BodyType {
+  SEDAN
+  SUV
+  CROSSOVER
+  MPV
+  HATCHBACK
+  PICKUP
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+model Car {
+  id              String       @id @default(uuid(7)) @db.Uuid
+  ownerId         String       @map("owner_id") @db.Uuid
+  modelId         Int          @map("model_id")
+  year            Int
+  // Normalised upper case, e.g. 51K-123.45. Masked publicly until a booking is confirmed.
+  licensePlate    String       @unique @map("license_plate")
+  color           String
+  bodyType        BodyType     @map("body_type")
+  seats           Int
+  transmission    Transmission
+  fuelType        FuelType     @map("fuel_type")
+  // L/100km, or kWh/100km for electric cars
+  fuelConsumption Decimal?     @map("fuel_consumption") @db.Decimal(5, 1)
+  odometerKm      Int          @map("odometer_km")
+  description     String?
+
+  // House rules (spec §4.1)
+  ruleNoSmoking       Boolean @default(false) @map("rule_no_smoking")
+  ruleNoPets          Boolean @default(false) @map("rule_no_pets")
+  ruleNoDurianSeafood Boolean @default(false) @map("rule_no_durian_seafood")
+  ruleSameFuelLevel   Boolean @default(false) @map("rule_same_fuel_level")
+  ruleKeepClean       Boolean @default(false) @map("rule_keep_clean")
+  rulesNote           String? @map("rules_note")
+
+  // Optional mileage limit
+  dailyKmLimit Int? @map("daily_km_limit")
+  extraKmFee   Int? @map("extra_km_fee") // VND per km over the limit
+
+  // Exact location. Only an approximate area is public until a booking is confirmed.
+  province    String
+  ward        String
+  addressLine String  @map("address_line")
+  latitude    Decimal @db.Decimal(9, 6)
+  longitude   Decimal @db.Decimal(9, 6)
+
+  // Delivery (spec §4.4). Pickup at the car's location is always available.
+  deliveryEnabled      Boolean @default(false) @map("delivery_enabled")
+  deliveryMaxRadiusKm  Int?    @map("delivery_max_radius_km")
+  deliveryFeePerKm     Int?    @map("delivery_fee_per_km")
+  deliveryFreeRadiusKm Int?    @map("delivery_free_radius_km")
+
+  instantBook   Boolean @default(false) @map("instant_book")
+  depositAmount Int     @default(5000000) @map("deposit_amount")
+  // Gap kept free after each trip for cleaning (spec §4.3)
+  bufferMinutes Int     @default(120) @map("buffer_minutes")
+
+  status          CarStatus @default(DRAFT)
+  rejectionReason String?   @map("rejection_reason")
+  submittedAt     DateTime? @map("submitted_at") @db.Timestamptz(3)
+  reviewedById    String?   @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime? @map("reviewed_at") @db.Timestamptz(3)
+  // Set when the owner cancels too often (spec §6, cancellation policy)
+  hiddenUntil     DateTime? @map("hidden_until") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  owner              User                @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  model              CarModel            @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  reviewedBy         User?               @relation("CarReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  pricing            CarPricing?
+  photos             CarPhoto[]
+  documents          CarDocument[]
+  amenities          CarAmenity[]
+  availabilityBlocks AvailabilityBlock[]
+  bookings           Booking[]
+  conversations      Conversation[]
+
+  @@index([ownerId])
+  @@index([status, province])
+  @@index([latitude, longitude])
+  @@index([modelId])
+  @@map("cars")
+}
+
+model CarPhoto {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  carId     String   @map("car_id") @db.Uuid
+  fileKey   String   @map("file_key") // public bucket
+  // 0 is the cover photo
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId, position])
+  @@map("car_photos")
+}
+
+enum CarDocumentType {
+  REGISTRATION
+  INSPECTION
+}
+
+model CarDocument {
+  id        String          @id @default(uuid(7)) @db.Uuid
+  carId     String          @map("car_id") @db.Uuid
+  type      CarDocumentType
+  fileKey   String          @map("file_key") // private bucket
+  expiresOn DateTime?       @map("expires_on") @db.Date
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId, type])
+  @@map("car_documents")
+}
+
+model CarAmenity {
+  carId     String @map("car_id") @db.Uuid
+  amenityId Int    @map("amenity_id")
+
+  car     Car     @relation(fields: [carId], references: [id], onDelete: Cascade)
+  amenity Amenity @relation(fields: [amenityId], references: [id], onDelete: Restrict)
+
+  @@id([carId, amenityId])
+  @@index([amenityId])
+  @@map("car_amenities")
+}
+
+// Current price list of a car (spec §4.2). A null price means the unit is turned off;
+// at least one unit must be on (CHECK in SQL). Bookings copy this into pricing_snapshot.
+model CarPricing {
+  carId                     String   @id @map("car_id") @db.Uuid
+  hourlyPrice               Int?     @map("hourly_price")
+  dailyPrice                Int?     @map("daily_price")
+  monthlyPrice              Int?     @map("monthly_price")
+  minDurationHours          Int      @map("min_duration_hours")
+  maxDurationDays           Int      @map("max_duration_days")
+  weekendSurchargePercent   Int?     @map("weekend_surcharge_percent")
+  holidaySurchargePercent   Int?     @map("holiday_surcharge_percent")
+  // Applied to rentals of 7 days or more
+  longRentalDiscountPercent Int?     @map("long_rental_discount_percent")
+  // VND per hour after the 30-minute grace period; null means 10% of the daily price
+  lateFeePerHour            Int?     @map("late_fee_per_hour")
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@map("car_pricings")
+}
+
+// Time ranges the owner marks as unavailable (spec §4.3). Half-open [start_at, end_at).
+model AvailabilityBlock {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  carId     String   @map("car_id") @db.Uuid
+  startAt   DateTime @map("start_at") @db.Timestamptz(3)
+  endAt     DateTime @map("end_at") @db.Timestamptz(3)
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId, startAt])
+  @@map("availability_blocks")
+}
+
+// ─── Bookings ───────────────────────────────────────────────────────────────
+
+// Changed only through BookingStateMachine in the API.
+enum BookingStatus {
+  PENDING_APPROVAL
+  AWAITING_PAYMENT
+  CONFIRMED
+  IN_PROGRESS
+  RETURNED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PickupMethod {
+  SELF_PICKUP
+  DELIVERY
+}
+
+enum ActorRole {
+  RENTER
+  OWNER
+  ADMIN
+  SYSTEM
+}
+
+model Booking {
+  id       String        @id @default(uuid(7)) @db.Uuid
+  carId    String        @map("car_id") @db.Uuid
+  renterId String        @map("renter_id") @db.Uuid
+  // Copied from the car so ownership checks and owner listings need no join
+  ownerId  String        @map("owner_id") @db.Uuid
+  status   BookingStatus
+
+  // Half-open [start_at, end_at)
+  startAt      DateTime @map("start_at") @db.Timestamptz(3)
+  endAt        DateTime @map("end_at") @db.Timestamptz(3)
+  // end_at plus the car's buffer at booking time. The exclusion constraint uses
+  // [start_at, blocked_until) for bookings that hold the calendar.
+  blockedUntil DateTime @map("blocked_until") @db.Timestamptz(3)
+
+  pickupMethod       PickupMethod @map("pickup_method")
+  deliveryAddress    String?      @map("delivery_address")
+  deliveryLatitude   Decimal?     @map("delivery_latitude") @db.Decimal(9, 6)
+  deliveryLongitude  Decimal?     @map("delivery_longitude") @db.Decimal(9, 6)
+  deliveryDistanceKm Decimal?     @map("delivery_distance_km") @db.Decimal(6, 2)
+
+  // Price locked at booking time (spec §12.1). Never recomputed from the car's current price.
+  pricingSnapshot       Json @map("pricing_snapshot") // copy of car_pricings and car rules used
+  priceBreakdown        Json @map("price_breakdown") // line items shown to the renter
+  rentalAmount          Int  @map("rental_amount")
+  deliveryFee           Int  @map("delivery_fee")
+  depositAmount         Int  @map("deposit_amount")
+  // rental_amount + delivery_fee + deposit_amount, paid in one go
+  totalAmount           Int  @map("total_amount")
+  commissionRatePercent Int  @map("commission_rate_percent")
+  commissionAmount      Int  @map("commission_amount")
+  // Settled on return, deducted from the deposit
+  lateFee               Int  @default(0) @map("late_fee")
+  extraKmFee            Int  @default(0) @map("extra_km_fee")
+
+  termsAcceptedAt    DateTime   @map("terms_accepted_at") @db.Timestamptz(3)
+  approvalDeadlineAt DateTime?  @map("approval_deadline_at") @db.Timestamptz(3)
+  paymentDeadlineAt  DateTime?  @map("payment_deadline_at") @db.Timestamptz(3)
+  confirmedAt        DateTime?  @map("confirmed_at") @db.Timestamptz(3)
+  pickedUpAt         DateTime?  @map("picked_up_at") @db.Timestamptz(3)
+  returnedAt         DateTime?  @map("returned_at") @db.Timestamptz(3)
+  completedAt        DateTime?  @map("completed_at") @db.Timestamptz(3)
+  cancelledAt        DateTime?  @map("cancelled_at") @db.Timestamptz(3)
+  cancelledBy        ActorRole? @map("cancelled_by")
+  cancellationReason String?    @map("cancellation_reason")
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  car                Car                 @relation(fields: [carId], references: [id], onDelete: Restrict)
+  renter             User                @relation("BookingRenter", fields: [renterId], references: [id], onDelete: Restrict)
+  owner              User                @relation("BookingOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  statusLogs         BookingStatusLog[]
+  payments           Payment[]
+  refunds            Refund[]
+  extensions         BookingExtension[]
+  tripReports        TripReport[]
+  dispute            Dispute?
+  reviews            Review[]
+  walletTransactions WalletTransaction[]
+
+  @@index([carId, startAt])
+  @@index([renterId, createdAt])
+  @@index([ownerId, createdAt])
+  @@index([status])
+  @@map("bookings")
+}
+
+// Timeline of status changes, written by BookingStateMachine.
+model BookingStatusLog {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  bookingId  String         @map("booking_id") @db.Uuid
+  fromStatus BookingStatus? @map("from_status")
+  toStatus   BookingStatus  @map("to_status")
+  actorRole  ActorRole      @map("actor_role")
+  actorId    String?        @map("actor_id") @db.Uuid
+  note       String?
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId, createdAt])
+  @@map("booking_status_logs")
+}
+
+enum BookingExtensionStatus {
+  PENDING
+  // Accepted by the owner, waiting for the renter to pay the difference
+  ACCEPTED
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+model BookingExtension {
+  id              String                 @id @default(uuid(7)) @db.Uuid
+  bookingId       String                 @map("booking_id") @db.Uuid
+  previousEndAt   DateTime               @map("previous_end_at") @db.Timestamptz(3)
+  requestedEndAt  DateTime               @map("requested_end_at") @db.Timestamptz(3)
+  status          BookingExtensionStatus @default(PENDING)
+  priceBreakdown  Json                   @map("price_breakdown")
+  extraAmount     Int                    @map("extra_amount")
+  respondedAt     DateTime?              @map("responded_at") @db.Timestamptz(3)
+  rejectionReason String?                @map("rejection_reason")
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([bookingId])
+  @@map("booking_extensions")
+}
+
+// ─── Payments (VNPay) ───────────────────────────────────────────────────────
+
+enum PaymentProvider {
+  VNPAY
+}
+
+enum PaymentPurpose {
+  BOOKING
+  EXTENSION
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+}
+
+model Payment {
+  id                    String          @id @default(uuid(7)) @db.Uuid
+  bookingId             String          @map("booking_id") @db.Uuid
+  extensionId           String?         @map("extension_id") @db.Uuid
+  purpose               PaymentPurpose
+  provider              PaymentProvider @default(VNPAY)
+  amount                Int
+  status                PaymentStatus   @default(PENDING)
+  // vnp_TxnRef. Unique so IPN handling can be idempotent.
+  txnRef                String          @unique @map("txn_ref")
+  // vnp_TransactionNo, needed for refunds
+  providerTransactionNo String?         @map("provider_transaction_no")
+  bankCode              String?         @map("bank_code")
+  responseCode          String?         @map("response_code")
+  rawResponse           Json?           @map("raw_response")
+  expiresAt             DateTime        @map("expires_at") @db.Timestamptz(3)
+  paidAt                DateTime?       @map("paid_at") @db.Timestamptz(3)
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking   Booking           @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  extension BookingExtension? @relation(fields: [extensionId], references: [id], onDelete: Restrict)
+  refunds   Refund[]
+
+  @@index([bookingId])
+  @@index([status, expiresAt])
+  @@map("payments")
+}
+
+enum RefundType {
+  // Rent and/or deposit returned on cancellation
+  CANCELLATION
+  // Deposit (minus deductions) returned after the trip
+  DEPOSIT
+  OTHER
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+// Refunds go back to the original payment through the VNPay refund API, never to a wallet.
+model Refund {
+  id                    String       @id @default(uuid(7)) @db.Uuid
+  paymentId             String       @map("payment_id") @db.Uuid
+  bookingId             String       @map("booking_id") @db.Uuid
+  type                  RefundType
+  amount                Int
+  status                RefundStatus @default(PENDING)
+  reason                String?
+  // vnp_RequestId sent to the refund API
+  requestId             String       @unique @map("request_id")
+  providerTransactionNo String?      @map("provider_transaction_no")
+  responseCode          String?      @map("response_code")
+  rawResponse           Json?        @map("raw_response")
+  processedAt           DateTime?    @map("processed_at") @db.Timestamptz(3)
+  createdAt             DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId])
+  @@index([bookingId])
+  @@index([status])
+  @@map("refunds")
+}
+
+// ─── Trip reports (spec §5.5) ───────────────────────────────────────────────
+
+enum TripReportType {
+  PICKUP
+  RETURN
+}
+
+enum TripReportPhotoKind {
+  FRONT
+  BACK
+  LEFT
+  RIGHT
+  ODOMETER
+  FUEL
+  DAMAGE
+  OTHER
+}
+
+model TripReport {
+  id               String         @id @default(uuid(7)) @db.Uuid
+  bookingId        String         @map("booking_id") @db.Uuid
+  type             TripReportType
+  createdById      String         @map("created_by_id") @db.Uuid
+  odometerKm       Int            @map("odometer_km")
+  // Fuel or battery level, 0–100
+  fuelLevelPercent Int            @map("fuel_level_percent")
+  notes            String?
+  // The other party confirms the report
+  confirmedById    String?        @map("confirmed_by_id") @db.Uuid
+  confirmedAt      DateTime?      @map("confirmed_at") @db.Timestamptz(3)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking     Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdBy   User              @relation("TripReportCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  confirmedBy User?             @relation("TripReportConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  photos      TripReportPhoto[]
+
+  @@unique([bookingId, type])
+  @@map("trip_reports")
+}
+
+model TripReportPhoto {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  tripReportId String              @map("trip_report_id") @db.Uuid
+  kind         TripReportPhotoKind
+  fileKey      String              @map("file_key") // private bucket
+  position     Int                 @default(0)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tripReport TripReport @relation(fields: [tripReportId], references: [id], onDelete: Cascade)
+
+  @@index([tripReportId])
+  @@map("trip_report_photos")
+}
+
+// ─── Disputes (spec §7) ─────────────────────────────────────────────────────
+
+enum DisputeCategory {
+  DAMAGE
+  CLEANING
+  FUEL
+  TRAFFIC_FINE
+  OTHER
+}
+
+enum DisputeStatus {
+  // Waiting for the renter's response (48 h)
+  OPEN
+  // Renter responded or the response window passed; waiting for an admin decision
+  UNDER_REVIEW
+  RESOLVED
+}
+
+enum DisputeRenterResponse {
+  ACCEPTED
+  CONTESTED
+}
+
+model Dispute {
+  id                 String                 @id @default(uuid(7)) @db.Uuid
+  bookingId          String                 @unique @map("booking_id") @db.Uuid
+  openedById         String                 @map("opened_by_id") @db.Uuid
+  category           DisputeCategory
+  claimedAmount      Int                    @map("claimed_amount")
+  description        String
+  status             DisputeStatus          @default(OPEN)
+  responseDeadlineAt DateTime               @map("response_deadline_at") @db.Timestamptz(3)
+  renterResponse     DisputeRenterResponse? @map("renter_response")
+  renterResponseNote String?                @map("renter_response_note")
+  renterRespondedAt  DateTime?              @map("renter_responded_at") @db.Timestamptz(3)
+  // Amount the admin decides to deduct from the deposit
+  resolvedAmount     Int?                   @map("resolved_amount")
+  resolutionNote     String?                @map("resolution_note")
+  resolvedById       String?                @map("resolved_by_id") @db.Uuid
+  resolvedAt         DateTime?              @map("resolved_at") @db.Timestamptz(3)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking    Booking           @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  openedBy   User              @relation("DisputeOpenedBy", fields: [openedById], references: [id], onDelete: Restrict)
+  resolvedBy User?             @relation("DisputeResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  evidence   DisputeEvidence[]
+
+  @@index([status, createdAt])
+  @@map("disputes")
+}
+
+model DisputeEvidence {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  disputeId     String   @map("dispute_id") @db.Uuid
+  submittedById String   @map("submitted_by_id") @db.Uuid
+  fileKey       String   @map("file_key") // private bucket
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  dispute     Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  submittedBy User    @relation(fields: [submittedById], references: [id], onDelete: Restrict)
+
+  @@index([disputeId])
+  @@map("dispute_evidence")
+}
+
+// ─── Reviews (spec §9) ──────────────────────────────────────────────────────
+
+enum ReviewDirection {
+  // The renter reviews the car and its owner
+  RENTER_TO_OWNER
+  OWNER_TO_RENTER
+}
+
+model Review {
+  id            String          @id @default(uuid(7)) @db.Uuid
+  bookingId     String          @map("booking_id") @db.Uuid
+  direction     ReviewDirection
+  authorId      String          @map("author_id") @db.Uuid
+  subjectUserId String          @map("subject_user_id") @db.Uuid
+  // 1–5, CHECK in SQL
+  rating        Int
+  comment       String?
+  // Both reviews of a booking are published together (spec §9)
+  publishedAt   DateTime?       @map("published_at") @db.Timestamptz(3)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking     Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  author      User    @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  subjectUser User    @relation("ReviewSubject", fields: [subjectUserId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, direction])
+  @@index([subjectUserId, publishedAt])
+  @@map("reviews")
+}
+
+// ─── Chat (spec §8) ─────────────────────────────────────────────────────────
+
+// One conversation per (renter, car).
+model Conversation {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  carId         String    @map("car_id") @db.Uuid
+  renterId      String    @map("renter_id") @db.Uuid
+  ownerId       String    @map("owner_id") @db.Uuid
+  lastMessageAt DateTime? @map("last_message_at") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  car      Car       @relation(fields: [carId], references: [id], onDelete: Restrict)
+  renter   User      @relation("ConversationRenter", fields: [renterId], references: [id], onDelete: Restrict)
+  owner    User      @relation("ConversationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  messages Message[]
+
+  @@unique([carId, renterId])
+  @@index([renterId, lastMessageAt])
+  @@index([ownerId, lastMessageAt])
+  @@map("conversations")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+}
+
+model Message {
+  id             String      @id @default(uuid(7)) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  // null for system messages
+  senderId       String?     @map("sender_id") @db.Uuid
+  type           MessageType
+  body           String?
+  imageKey       String?     @map("image_key")
+  // Read by the other participant
+  readAt         DateTime?   @map("read_at") @db.Timestamptz(3)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+// ─── Email log (spec §10) ───────────────────────────────────────────────────
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+model Notification {
+  id        String             @id @default(uuid(7)) @db.Uuid
+  userId    String?            @map("user_id") @db.Uuid
+  toEmail   String             @map("to_email")
+  template  String // e.g. booking.confirmed
+  subject   String
+  payload   Json
+  status    NotificationStatus @default(QUEUED)
+  error     String?
+  sentAt    DateTime?          @map("sent_at") @db.Timestamptz(3)
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, template, createdAt])
+  @@index([status, createdAt])
+  @@map("notifications")
 }

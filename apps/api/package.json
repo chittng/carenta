@@ -9,7 +9,8 @@
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "db:seed": "prisma db seed"
   },
   "dependencies": {
@@ -17,6 +18,10 @@
     "@nestjs/common": "12.4.2",
     "@nestjs/core": "12.4.2",
     "@nestjs/platform-express": "12.4.2",
+    "@node-rs/argon2": "2.2.2",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "pg": "8.23.1",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   },
@@ -27,6 +32,7 @@
     "@nestjs/testing": "12.4.2",
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
     "@types/supertest": "7.2.1",
     "dotenv": "17.4.2",
     "prisma": "7.10.1",
