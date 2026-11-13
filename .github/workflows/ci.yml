@@ -17,6 +17,9 @@ jobs:
     name: Lint, typecheck, test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Prisma's config requires it even for `prisma generate`; nothing connects to it here.
+      DATABASE_URL: postgresql://carenta:carenta@localhost:5432/carenta
     steps:
       - uses: actions/checkout@v7
 
@@ -31,6 +34,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm format:check
+
+      # Generated Prisma client is needed by type-aware lint and typecheck
+      - run: pnpm db:generate
 
       - run: pnpm lint
 

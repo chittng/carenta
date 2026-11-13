@@ -16,10 +16,14 @@ cp apps/web/.env.example apps/web/.env.local
 # Dịch vụ nền
 docker compose up -d
 
-pnpm db:migrate
-pnpm db:seed
+pnpm db:migrate   # tạo bảng và sinh Prisma Client
+pnpm db:seed      # hãng/dòng xe, tiện nghi, ngày lễ, cấu hình, tài khoản admin
 pnpm dev
 ```
+
+Tài khoản admin mặc định khi chạy local: `admin@carenta.local` / `Carenta@123`. Đổi bằng `ADMIN_EMAIL`, `ADMIN_PASSWORD` trong `apps/api/.env` trước khi seed. Seed chạy lại nhiều lần vẫn an toàn và không đổi mật khẩu của tài khoản đã có.
+
+Sau khi kéo code có thay đổi `schema.prisma`, chạy lại `pnpm db:migrate`. Nếu chỉ cần sinh lại Prisma Client mà không đụng DB thì chạy `pnpm db:generate`.
 
 Sau khi chạy:
 

@@ -55,6 +55,7 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - Mặc định xe **luôn trống**.
 - Chủ xe có thể **chặn** khoảng ngày giờ (xe bận, đi bảo dưỡng) trên lịch.
 - Hệ thống tự chặn những khoảng đã có đơn xác nhận. Thêm **thời gian đệm** giữa hai chuyến do chủ xe chọn (mặc định 2 giờ) để vệ sinh xe.
+- Đơn **chiếm lịch** khi ở trạng thái CHỜ_THANH_TOÁN, ĐÃ_XÁC_NHẬN hoặc ĐANG_THUÊ, tính từ giờ nhận xe đến giờ trả xe cộng thời gian đệm. Đơn **CHỜ_DUYỆT không chiếm lịch**: nhiều người có thể gửi yêu cầu trùng giờ, chủ xe chấp nhận đơn nào trước thì đơn đó giữ lịch, các yêu cầu trùng còn lại không chấp nhận được nữa. Thời gian đệm được chốt vào đơn lúc đặt.
 
 ### 4.4 Giao nhận xe **[Đề xuất]**
 
@@ -274,6 +275,15 @@ User ─┬─ DriverLicense (1-1, trạng thái duyệt)
 Conversation ── Message
 CarMake ── CarModel ; Amenity ; Holiday ; PlatformSetting ; Notification(email log)
 ```
+
+Schema đầy đủ: [`apps/api/prisma/schema.prisma`](../apps/api/prisma/schema.prisma). Ngoài sơ đồ trên còn có `BookingStatusLog` (dòng thời gian trạng thái của đơn, dùng cho Console) và `TripReportPhoto`.
+
+Ghi chú **[Đề xuất]**:
+
+- **Địa chỉ xe** lưu theo tỉnh/thành và phường/xã. Từ 1/7/2025 Việt Nam bỏ cấp quận/huyện, nên các chỗ ghi "quận" trong spec hiểu là phường/xã.
+- **Phụ phí cuối tuần** và **phụ phí ngày lễ** là hai mức % riêng, chủ xe có thể đặt bằng nhau.
+- Người thuê viết **một đánh giá** (1–5 sao) dùng chung cho xe và chủ xe. Chủ xe viết một đánh giá cho người thuê.
+- **Ngày lễ trong seed** là mọi ngày trong kỳ nghỉ lễ chính thức của khối nhà nước, kể cả cuối tuần nằm trong kỳ nghỉ. Seed gồm năm 2026 và Tết Dương lịch, Tết Nguyên đán 2027 để phủ khung đặt trước 90 ngày. Admin chỉnh trong Console.
 
 ## 16. Lộ trình xây dựng
 
