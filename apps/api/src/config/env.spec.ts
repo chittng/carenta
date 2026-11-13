@@ -9,6 +9,10 @@ const VALID_ENV = {
   S3_PUBLIC_BUCKET: 'carenta-public',
   S3_PUBLIC_BASE_URL: 'http://localhost:9000/carenta-public',
   S3_PRIVATE_BUCKET: 'carenta-private',
+  VALKEY_URL: 'redis://localhost:6379',
+  SMTP_HOST: 'localhost',
+  SMTP_PORT: '1025',
+  MAIL_FROM: 'Carenta <no-reply@carenta.local>',
 };
 
 describe('validateEnv', () => {
@@ -18,8 +22,20 @@ describe('validateEnv', () => {
       PORT: 4000,
       S3_REGION: 'auto',
       S3_FORCE_PATH_STYLE: false,
+      JOBS_WORKER: true,
+      SMTP_SECURE: false,
+      SMTP_USER: undefined,
+      SMTP_PASSWORD: undefined,
       ...VALID_ENV,
+      SMTP_PORT: 1025,
     });
+  });
+
+  it('treats empty SMTP credentials as unset', () => {
+    const env = validateEnv({ ...VALID_ENV, SMTP_USER: '', SMTP_PASSWORD: '' });
+
+    expect(env.SMTP_USER).toBeUndefined();
+    expect(env.SMTP_PASSWORD).toBeUndefined();
   });
 
   it('parses S3_FORCE_PATH_STYLE and trims a trailing slash from S3_PUBLIC_BASE_URL', () => {
@@ -56,6 +72,10 @@ describe('validateEnv', () => {
     ['S3_ENDPOINT', 's3.amazonaws.com'],
     ['S3_FORCE_PATH_STYLE', 'maybe'],
     ['S3_PRIVATE_BUCKET', ''],
+    ['VALKEY_URL', 'http://localhost:6379'],
+    ['JOBS_WORKER', 'sometimes'],
+    ['SMTP_PORT', 'smtp'],
+    ['MAIL_FROM', 'Carenta'],
   ])('rejects an invalid %s', (key, value) => {
     expect(() => validateEnv({ ...VALID_ENV, [key]: value })).toThrow(key);
   });

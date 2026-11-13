@@ -5,11 +5,13 @@ import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { AppConfigModule } from './config/config.module.js';
 import { HealthModule } from './health/health.module.js';
+import { JobsModule } from './jobs/jobs.module.js';
+import { MailModule } from './mail/mail.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { StorageModule } from './storage/storage.module.js';
 
 @Module({
-  imports: [AppConfigModule, PrismaModule, StorageModule, HealthModule],
+  imports: [AppConfigModule, PrismaModule, StorageModule, JobsModule, MailModule, HealthModule],
   providers: [
     // Validates @Body/@Query/@Param typed with a createZodDto class.
     { provide: APP_PIPE, useClass: ZodValidationPipe },

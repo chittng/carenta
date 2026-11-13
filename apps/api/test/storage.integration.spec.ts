@@ -10,15 +10,15 @@ import { testConfig } from './test-config.js';
 
 /**
  * Round trip against the RustFS from compose.yaml (`docker compose up -d`).
- * CI has no RustFS, so this only runs with S3_INTEGRATION=1:
- *   S3_INTEGRATION=1 pnpm --filter @carenta/api exec vitest run test/storage.integration.spec.ts
+ * CI has no RustFS, so this only runs with INTEGRATION=1:
+ *   INTEGRATION=1 pnpm --filter @carenta/api exec vitest run test/storage.integration.spec.ts
  */
 const photo = () =>
   sharp({ create: { width: 2000, height: 1500, channels: 3, background: '#c33' } })
     .jpeg()
     .toBuffer();
 
-describe.runIf(process.env.S3_INTEGRATION === '1')('storage against RustFS', () => {
+describe.runIf(process.env.INTEGRATION === '1')('storage against RustFS', () => {
   const { env, config } = testConfig();
   const storage = new StorageService(config);
   const uploads = new UploadsService(storage);
