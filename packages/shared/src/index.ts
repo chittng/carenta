@@ -4,6 +4,7 @@ import './zod-locale.js';
 
 export * from './auth.js';
 export * from './cars.js';
+export * from './console.js';
 export * from './constants.js';
 export * from './errors.js';
 export * from './money.js';

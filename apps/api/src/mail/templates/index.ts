@@ -26,7 +26,27 @@ export interface EmailTemplateData {
   'auth.verify-email': { fullName: string; verifyUrl: string };
   /** "Quên mật khẩu". */
   'auth.reset-password': { fullName: string; resetUrl: string };
+  /** Console review of a new car (spec §10). `carName`: make, model, year and plate. */
+  'car.approved': CarEmail;
+  'car.rejected': CarEmail & { reason: string };
+  /** Console review of changes to an approved car (spec §12.3). */
+  'car.revision-approved': CarEmail;
+  'car.revision-rejected': CarEmail & { reason: string };
+  /** An admin hid a listed car (it can come back) or removed it for good. */
+  'car.hidden': CarEmail & { reason: string };
+  'car.unhidden': CarEmail;
+  'car.removed': CarEmail & { reason: string };
+  /** An admin locked or unlocked the account (spec §12.5). */
+  'account.locked': { fullName: string; reason: string };
+  'account.unlocked': { fullName: string };
 }
+
+// A type alias, not an interface: interfaces are not assignable to JsonObject.
+type CarEmail = {
+  fullName: string;
+  carId: string;
+  carName: string;
+};
 
 export type EmailTemplateName = keyof EmailTemplateData;
 
@@ -89,7 +109,120 @@ const EMAIL_TEMPLATES: { [N in EmailTemplateName]: EmailTemplate<EmailTemplateDa
       ],
     }),
   },
+  'car.approved': {
+    build: (data, context) =>
+      carEmail(data, context, {
+        subject: 'Xe của bạn đã được duyệt',
+        heading: 'Xe đã được duyệt',
+        message:
+          'Xe của bạn đã được duyệt và đang hiển thị trên Carenta. Người thuê đã có thể tìm và đặt xe.',
+      }),
+  },
+  'car.rejected': {
+    build: (data, context) =>
+      carEmail(data, context, {
+        subject: 'Xe của bạn chưa được duyệt',
+        heading: 'Xe chưa được duyệt',
+        message: 'Rất tiếc, xe của bạn chưa được duyệt.',
+        reason: data.reason,
+        next: 'Bạn có thể chỉnh sửa thông tin theo lý do trên rồi gửi duyệt lại.',
+      }),
+  },
+  'car.revision-approved': {
+    build: (data, context) =>
+      carEmail(data, context, {
+        subject: 'Thay đổi thông tin xe đã được duyệt',
+        heading: 'Thay đổi đã được duyệt',
+        message: 'Thay đổi thông tin xe của bạn đã được duyệt và áp dụng.',
+      }),
+  },
+  'car.revision-rejected': {
+    build: (data, context) =>
+      carEmail(data, context, {
+        subject: 'Thay đổi thông tin xe chưa được duyệt',
+        heading: 'Thay đổi chưa được duyệt',
+        message: 'Thay đổi thông tin xe của bạn chưa được duyệt. Xe vẫn giữ thông tin cũ.',
+        reason: data.reason,
+        next: 'Bạn có thể sửa lại và gửi thay đổi mới.',
+      }),
+  },
+  'car.hidden': {
+    build: (data, context) =>
+      carEmail(data, context, {
+        subject: 'Xe của bạn đã bị tạm ẩn',
+        heading: 'Xe đã bị tạm ẩn',
+        message:
+          'Xe của bạn đã bị tạm ẩn khỏi kết quả tìm kiếm. Các chuyến đã xác nhận vẫn giữ nguyên.',
+        reason: data.reason,
+        next: 'Vui lòng cập nhật xe theo lý do trên hoặc liên hệ Carenta để được hiển thị lại.',
+      }),
+  },
+  'car.unhidden': {
+    build: (data, context) =>
+      carEmail(data, context, {
+        subject: 'Xe của bạn đã hiển thị lại',
+        heading: 'Xe đã hiển thị lại',
+        message: 'Xe của bạn đã được hiển thị lại trên Carenta.',
+      }),
+  },
+  'car.removed': {
+    build: (data, context) =>
+      carEmail(data, context, {
+        subject: 'Xe của bạn đã bị gỡ khỏi Carenta',
+        heading: 'Xe đã bị gỡ',
+        message:
+          'Xe của bạn đã bị gỡ khỏi Carenta và không thể cho thuê nữa. Các chuyến đã xác nhận vẫn giữ nguyên.',
+        reason: data.reason,
+      }),
+  },
+  'account.locked': {
+    build: ({ fullName, reason }) => ({
+      subject: 'Tài khoản Carenta của bạn đã bị khoá',
+      heading: 'Tài khoản đã bị khoá',
+      blocks: [
+        paragraph('Xin chào ', { bold: fullName }, ','),
+        paragraph(
+          'Tài khoản Carenta của bạn đã bị khoá và được đăng xuất khỏi mọi thiết bị. Bạn không thể đăng nhập cho đến khi tài khoản được mở khoá.',
+        ),
+        details([['Lý do', reason]]),
+        note('Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ bộ phận hỗ trợ của Carenta.'),
+      ],
+    }),
+  },
+  'account.unlocked': {
+    build: ({ fullName }, { webUrl }) => ({
+      subject: 'Tài khoản Carenta của bạn đã được mở khoá',
+      heading: 'Tài khoản đã được mở khoá',
+      blocks: [
+        paragraph('Xin chào ', { bold: fullName }, ','),
+        paragraph('Tài khoản Carenta của bạn đã được mở khoá. Bạn có thể đăng nhập lại.'),
+        button('Đăng nhập', `${webUrl}/dang-nhap`),
+      ],
+    }),
+  },
 };
+
+/** Body shared by the car review emails: greeting, message, reason, link to the car. */
+function carEmail(
+  { fullName, carId, carName }: CarEmail,
+  { webUrl }: RenderContext,
+  content: { subject: string; heading: string; message: string; reason?: string; next?: string },
+): EmailContent {
+  return {
+    subject: content.subject,
+    heading: content.heading,
+    blocks: [
+      paragraph('Xin chào ', { bold: fullName }, ','),
+      paragraph(content.message),
+      details([
+        ['Xe', carName],
+        ...(content.reason === undefined ? [] : [['Lý do', content.reason] as [string, string]]),
+      ]),
+      ...(content.next === undefined ? [] : [paragraph(content.next)]),
+      button('Xem xe của tôi', `${webUrl}/xe-cua-toi/${carId}`),
+    ],
+  };
+}
 
 export function buildEmail<N extends EmailTemplateName>(
   name: N,

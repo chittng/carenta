@@ -1,14 +1,4 @@
-/** URL-safe slug, Vietnamese diacritics removed: "Mercedes-Benz" -> "mercedes-benz". */
-export function slugify(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+export { slugify } from '../../src/common/slug.js';
 
 /**
  * Every calendar day from `from` to `to` inclusive, as UTC-midnight Dates.

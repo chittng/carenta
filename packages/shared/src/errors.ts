@@ -50,6 +50,12 @@ export const ErrorCode = {
   CAR_INCOMPLETE: 'CAR_INCOMPLETE',
   /** More than 15 photos, or fewer than 4 on a car that has been approved. */
   CAR_PHOTO_LIMIT: 'CAR_PHOTO_LIMIT',
+
+  // Console
+  /** A make, model or amenity with the same name (or code) already exists. */
+  CATALOG_DUPLICATE: 'CATALOG_DUPLICATE',
+  /** Locking an account that is already locked, or unlocking one that is not. */
+  USER_STATUS_CONFLICT: 'USER_STATUS_CONFLICT',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
