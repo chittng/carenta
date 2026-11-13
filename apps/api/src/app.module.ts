@@ -12,6 +12,7 @@ import { MailModule } from './mail/mail.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RateLimitModule } from './rate-limit/rate-limit.module.js';
 import { StorageModule } from './storage/storage.module.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { StorageModule } from './storage/storage.module.js';
     MailModule,
     AuthModule,
     CarsModule,
+    UsersModule,
     HealthModule,
   ],
   providers: [
