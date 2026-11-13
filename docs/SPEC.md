@@ -238,21 +238,21 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 
 ## 14. Kiến trúc kỹ thuật
 
-| Thành phần           | Lựa chọn                                                                   |
-| -------------------- | -------------------------------------------------------------------------- |
-| Monorepo             | pnpm workspaces + Turborepo                                                |
-| Frontend             | Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, TanStack Query  |
-| Backend              | NestJS, TypeScript, REST + WebSocket (Socket.IO) cho chat                  |
-| CSDL                 | PostgreSQL + Prisma ORM (PostGIS hoặc tính khoảng cách để tìm theo vị trí) |
-| Hàng đợi / cache     | Redis + BullMQ (gửi email, job hết hạn đơn, giải phóng cọc)                |
-| Lưu file             | S3-compatible: MinIO khi chạy local, Cloudflare R2 khi deploy              |
-| Email                | Nodemailer. Local dùng Mailpit, khi deploy dùng Resend                     |
-| Thanh toán           | VNPay sandbox                                                              |
-| Bản đồ               | Leaflet + OpenStreetMap. Gợi ý địa chỉ bằng Nominatim                      |
-| Xác thực             | Email + mật khẩu, JWT (access + refresh token qua httpOnly cookie)         |
-| Kiểm thử             | Vitest (API và `packages/shared`), Playwright (E2E cho các luồng chính)    |
-| Môi trường           | Docker Compose cho local (Postgres, Redis, MinIO, Mailpit)                 |
-| Deploy **[Đề xuất]** | Web lên Vercel. API, Postgres, Redis lên Railway hoặc Render               |
+| Thành phần           | Lựa chọn                                                                                     |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| Monorepo             | pnpm workspaces + Turborepo                                                                  |
+| Frontend             | Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, TanStack Query                    |
+| Backend              | NestJS, TypeScript, REST + WebSocket (Socket.IO) cho chat                                    |
+| CSDL                 | PostgreSQL + Prisma ORM. Tìm theo vị trí bằng vĩ độ/kinh độ và Haversine, không dùng PostGIS |
+| Hàng đợi / cache     | Valkey (tương thích Redis) + BullMQ (gửi email, job hết hạn đơn, giải phóng cọc)             |
+| Lưu file             | S3-compatible: RustFS khi chạy local, Cloudflare R2 khi deploy. Bucket public và private     |
+| Email                | Nodemailer. Local dùng Mailpit, khi deploy dùng Resend                                       |
+| Thanh toán           | VNPay sandbox                                                                                |
+| Bản đồ               | Leaflet + OpenStreetMap. Gợi ý địa chỉ bằng Nominatim                                        |
+| Xác thực             | Email + mật khẩu, JWT (access + refresh token qua httpOnly cookie)                           |
+| Kiểm thử             | Vitest (API và `packages/shared`), Playwright (E2E cho các luồng chính)                      |
+| Môi trường           | Docker Compose cho local (Postgres, Valkey, RustFS, Mailpit)                                 |
+| Deploy **[Đề xuất]** | Web lên Vercel. API, Postgres, Valkey lên Railway hoặc Render                                |
 
 ## 15. Mô hình dữ liệu (rút gọn)
 
