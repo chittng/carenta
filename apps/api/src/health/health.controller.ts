@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 import { APP_TIME_ZONE } from '@carenta/shared';
 
+import { Public } from '../auth/decorators.js';
+
 const healthSchema = z.object({
   status: z.literal('ok'),
   timeZone: z.string(),
@@ -13,6 +15,7 @@ const healthSchema = z.object({
 class HealthDto extends createZodDto(healthSchema) {}
 
 @ApiTags('Hệ thống')
+@Public()
 @Controller('health')
 export class HealthController {
   @Get()

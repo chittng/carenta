@@ -21,7 +21,8 @@
       "dependsOn": ["db:generate"]
     },
     "test": {
-      "dependsOn": ["^build", "db:generate"]
+      "dependsOn": ["^build", "db:generate"],
+      "env": ["INTEGRATION"]
     }
   }
 }

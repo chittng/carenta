@@ -3,6 +3,7 @@ import { validateEnv } from './env.js';
 const VALID_ENV = {
   WEB_URL: 'http://localhost:3000',
   DATABASE_URL: 'postgresql://carenta:carenta@localhost:5432/carenta',
+  JWT_SECRET: 'test-secret-that-is-at-least-32-characters',
   S3_ENDPOINT: 'http://localhost:9000',
   S3_ACCESS_KEY_ID: 'carenta',
   S3_SECRET_ACCESS_KEY: 'carenta-secret',
@@ -20,6 +21,8 @@ describe('validateEnv', () => {
     expect(validateEnv(VALID_ENV)).toEqual({
       NODE_ENV: 'development',
       PORT: 4000,
+      TRUST_PROXY_HOPS: 0,
+      COOKIE_DOMAIN: undefined,
       S3_REGION: 'auto',
       S3_FORCE_PATH_STYLE: false,
       JOBS_WORKER: true,
@@ -76,6 +79,8 @@ describe('validateEnv', () => {
     ['JOBS_WORKER', 'sometimes'],
     ['SMTP_PORT', 'smtp'],
     ['MAIL_FROM', 'Carenta'],
+    ['JWT_SECRET', 'too-short'],
+    ['TRUST_PROXY_HOPS', '-1'],
   ])('rejects an invalid %s', (key, value) => {
     expect(() => validateEnv({ ...VALID_ENV, [key]: value })).toThrow(key);
   });

@@ -17,6 +17,20 @@ export const envSchema = z.object({
   /** Web origin: the only origin allowed by CORS, also used for links in emails. */
   WEB_URL: z.url({ protocol: /^https?$/ }).transform((url) => url.replace(/\/+$/, '')),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  /**
+   * Proxies in front of the API (load balancer, Railway's router) whose X-Forwarded-For
+   * is trusted for the client IP used by rate limits. 0 when clients connect directly.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
+
+  // Authentication
+  /** Signs access tokens (HS256). At least 32 random characters; rotating it signs everyone out. */
+  JWT_SECRET: z.string().min(32, { error: 'JWT_SECRET cần ít nhất 32 ký tự' }),
+  /**
+   * Cookie domain, e.g. `.carenta.vn` when the web app and API are on sibling subdomains.
+   * Unset: cookies belong to the API host only.
+   */
+  COOKIE_DOMAIN: emptyAsUndefined,
 
   // S3-compatible storage: RustFS locally, Cloudflare R2 when deployed.
   /** Must be reachable from the browser too: presigned upload/download URLs point at it. */
