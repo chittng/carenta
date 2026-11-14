@@ -12,6 +12,7 @@ export * from './errors.js';
 export * from './money.js';
 export * from './pagination.js';
 export * from './pricing.js';
+export * from './public-cars.js';
 export * from './rental-terms.js';
 export * from './search.js';
 export * from './time.js';

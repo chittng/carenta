@@ -18,6 +18,7 @@ import {
   type TimeRange,
   vietnamMonthRange,
 } from './availability.js';
+import { listedCarWhere } from './public-cars.policy.js';
 
 const blockSelect = { id: true, startAt: true, endAt: true, reason: true } as const;
 type BlockRow = Prisma.AvailabilityBlockGetPayload<{ select: typeof blockSelect }>;
@@ -111,12 +112,7 @@ export class CarAvailabilityService {
 
   async publicCalendar(carId: string, month: string, now = new Date()): Promise<CarAvailability> {
     const car = await this.prisma.car.findFirst({
-      where: {
-        id: carId,
-        status: 'ACTIVE',
-        owner: { status: 'ACTIVE' },
-        OR: [{ hiddenUntil: null }, { hiddenUntil: { lte: now } }],
-      },
+      where: { id: carId, ...listedCarWhere(now) },
       select: { id: true },
     });
     if (!car) throw notFound();
