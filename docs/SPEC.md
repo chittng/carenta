@@ -96,6 +96,10 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - Chủ xe có thể **chặn** khoảng ngày giờ (xe bận, đi bảo dưỡng) trên lịch.
 - Hệ thống tự chặn những khoảng đã có đơn xác nhận. Thêm **thời gian đệm** giữa hai chuyến do chủ xe chọn (mặc định 2 giờ, từ 0 đến 24 giờ theo bước 30 phút) để vệ sinh xe.
 - Đơn **chiếm lịch** khi ở trạng thái CHỜ_THANH_TOÁN, ĐÃ_XÁC_NHẬN hoặc ĐANG_THUÊ, tính từ giờ nhận xe đến giờ trả xe cộng thời gian đệm. Đơn **CHỜ_DUYỆT không chiếm lịch**: nhiều người có thể gửi yêu cầu trùng giờ, chủ xe chấp nhận đơn nào trước thì đơn đó giữ lịch, các yêu cầu trùng còn lại không chấp nhận được nữa. Thời gian đệm được chốt vào đơn lúc đặt.
+- **Chặn tay**: từ chối tạo hoặc sửa khoảng chặn trùng đơn đang chiếm lịch, kể cả thời gian đệm đã chốt của đơn. Các khoảng chặn tay được phép trùng nhau và sửa/xoá độc lập. Thời gian theo bước 30 phút, kết thúc sau bắt đầu; khoảng chặn là nửa mở `[bắt đầu, kết thúc)`, không cộng đệm. Đệm chỉ áp dụng giữa hai chuyến.
+- **Lịch bận công khai theo tháng**: khách chưa đăng nhập xem được lịch của xe đang hiển thị (cùng điều kiện với tìm kiếm). Tháng tính theo giờ Việt Nam. Chỉ trả các khoảng bận đã gộp (cả khoảng tiếp giáp), cắt tại biên tháng; không trả lý do chặn, mã đơn hoặc thông tin cá nhân. Lịch gồm chặn tay và ba trạng thái đơn chiếm lịch với đệm đã chốt; các trạng thái khác không chiếm lịch. Tìm kiếm và tạo đơn vẫn kiểm tra cả đệm của chuyến mới khi chuyến mới nằm trước một đơn khác.
+- **Lịch của chủ xe**: xem được cả xe chưa công khai; danh sách chặn tay theo tháng giữ nguyên đầu/cuối khoảng và lý do để sửa/xoá. Xe đã bị admin gỡ không được sửa lịch, theo quy tắc sửa xe chung.
+- **[Đề xuất]** Không áp dụng giới hạn đặt trước hoặc độ dài chuyến cho chặn tay; chủ xe có thể quản lý cả khoảng quá khứ và tương lai. Lý do chặn tuỳ chọn, tối đa 500 ký tự.
 
 ### 4.4 Giao nhận xe **[Đề xuất]**
 

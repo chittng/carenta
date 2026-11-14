@@ -50,6 +50,8 @@ export const ErrorCode = {
   CAR_INCOMPLETE: 'CAR_INCOMPLETE',
   /** More than 15 photos, or fewer than 4 on a car that has been approved. */
   CAR_PHOTO_LIMIT: 'CAR_PHOTO_LIMIT',
+  /** An owner block overlaps a booking that holds the calendar, including its buffer. */
+  AVAILABILITY_BOOKING_CONFLICT: 'AVAILABILITY_BOOKING_CONFLICT',
 
   // Console
   /** A make, model or amenity with the same name (or code) already exists. */

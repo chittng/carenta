@@ -3,6 +3,7 @@
 import './zod-locale.js';
 
 export * from './auth.js';
+export * from './availability.js';
 export * from './cars.js';
 export * from './console.js';
 export * from './constants.js';

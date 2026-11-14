@@ -15,14 +15,12 @@ import { fromDateOnly, toDateOnly } from '../common/dates.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UploadsService } from '../storage/uploads.service.js';
+import { freeForTripSql } from './availability.js';
 import { modelWithMake } from './cars.mapper.js';
 
 const MINUTES_PER_DAY = 24 * 60;
 const KM_PER_DEGREE_LATITUDE = 111.32;
 const EARTH_RADIUS_KM = 6371;
-
-/** Booking statuses that hold the calendar (spec §4.3); the same set as `bookings_no_overlap`. */
-const HOLDING_STATUSES = ['AWAITING_PAYMENT', 'CONFIRMED', 'IN_PROGRESS'] as const;
 
 interface Point {
   lat: number;
@@ -173,21 +171,14 @@ export class CarSearchService {
       // The car's own minimum and maximum length, as `quoteRental` checks them.
       add(Prisma.sql`p.min_duration_hours * 60 <= ${trip.minutes}`);
       add(Prisma.sql`p.max_duration_days * ${MINUTES_PER_DAY} >= ${trip.minutes}`);
-      // Free of the owner's blocks, half-open [start_at, end_at).
-      add(Prisma.sql`NOT EXISTS (
-        SELECT 1 FROM availability_blocks ab
-        WHERE ab.car_id = c.id AND ab.start_at < ${end} AND ab.end_at > ${start}
-      )`);
-      // Free of bookings that hold the calendar, buffers included on both sides: the
-      // booking's own (locked into blocked_until) and the car's current one after this
-      // trip. Same test as the bookings_no_overlap exclusion constraint, so it can use it.
-      add(Prisma.sql`NOT EXISTS (
-        SELECT 1 FROM bookings bk
-        WHERE bk.car_id = c.id
-          AND bk.status::text IN (${Prisma.join([...HOLDING_STATUSES])})
-          AND tstzrange(bk.start_at, bk.blocked_until, '[)')
-            && tstzrange(${start}, ${end} + c.buffer_minutes * interval '1 minute', '[)')
-      )`);
+      add(
+        freeForTripSql(
+          Prisma.sql`c.id`,
+          start,
+          end,
+          Prisma.sql`${end} + c.buffer_minutes * interval '1 minute'`,
+        ),
+      );
     }
     return conditions;
   }
