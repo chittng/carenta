@@ -5,6 +5,7 @@ import {
   type ConsoleDriverLicenseListQuery,
   type ConsoleDriverLicenseSummary,
   DRIVER_LICENSE_CLASS_LABELS,
+  DRIVER_LICENSE_EXPIRY_REMINDER_DAYS,
   DriverLicenseStatus,
   ErrorCode,
   type MyDriverLicenses,
@@ -30,8 +31,6 @@ import {
 
 type Tx = Prisma.TransactionClient;
 
-/** Email the holder this many days before the license expires (spec §12.2). */
-export const EXPIRY_REMINDER_DAYS = 30;
 const REMINDER_JOB = 'driver-license-expiry-reminder';
 const EXPIRY_JOB = 'driver-license-expiry';
 
@@ -354,7 +353,7 @@ export class DriverLicensesService implements OnModuleInit {
     const data: LicenseJob = { licenseId: license.id, expiresOn };
     try {
       await this.jobs.schedule(REMINDER_JOB, data, {
-        runAt: vietnamMorning(expiresOn, -EXPIRY_REMINDER_DAYS),
+        runAt: vietnamMorning(expiresOn, -DRIVER_LICENSE_EXPIRY_REMINDER_DAYS),
         jobId: `${REMINDER_JOB}.${license.id}`,
       });
       await this.jobs.schedule(EXPIRY_JOB, data, {

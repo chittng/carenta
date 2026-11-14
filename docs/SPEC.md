@@ -35,6 +35,7 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 
 - Người dùng nộp ảnh hai mặt cùng họ tên, số GPLX, hạng, ngày sinh và ngày hết hạn. Ảnh nằm trong bucket private, chỉ người nộp và admin xem được. Admin duyệt hoặc từ chối kèm lý do; kết quả được gửi email.
 - **Nộp lại** lúc nào cũng được. GPLX đã duyệt vẫn dùng để thuê xe cho tới khi bản mới được duyệt; bản mới bị từ chối thì bản cũ vẫn giữ. Bản mới được duyệt thì thay bản cũ.
+- Mục **GPLX** ở `/tai-khoan` hiện trạng thái: chưa nộp, chờ duyệt, đã duyệt, **sắp hết hạn** (trong 30 ngày cuối, cùng lúc gửi email nhắc), bị từ chối kèm lý do, đã hết hạn. Bản mới đang chờ hoặc bị từ chối hiện cùng GPLX đang dùng. Chưa xác thực email thì chưa hiện form nộp mà hiện nút gửi lại email xác thực.
 - **Mỗi số GPLX chỉ gắn với một tài khoản**: số đang chờ duyệt hoặc đã duyệt ở tài khoản khác thì không nộp được, người dùng được hướng dẫn liên hệ hỗ trợ.
 - **[Đề xuất]** Số GPLX gồm 12 chữ số. Người nộp phải đủ 18 tuổi; GPLX nộp lên phải còn hạn. Admin không duyệt được GPLX đã hết hạn.
 - **[Đề xuất]** Hạng được chấp nhận: mọi hạng lái được ô tô theo luật mới (B, C1, C, D1, D2, D và các hạng kéo rơ moóc BE, C1E, CE, D1E, D2E, DE) và theo luật cũ (B1, B2, C, D, E, FB2, FC, FD, FE). "Hạng D1 trở lên" cho xe từ 10 chỗ là D1, D2, D, D1E, D2E, DE và D, E, FD, FE cũ.

@@ -76,10 +76,15 @@ const WEEKDAYS: Record<string, string> = {
   Sat: 'T7',
 };
 
+/** A calendar date (`YYYY-MM-DD`, e.g. a birth or expiry date) as `20/11/2026`. */
+export function formatIsoDate(date: string): string {
+  const [year, month, day] = date.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 /** `20/11/2026` */
 export function formatDate(instant: Date): string {
-  const [year, month, day] = vietnamDate(instant).split('-');
-  return `${day}/${month}/${year}`;
+  return formatIsoDate(vietnamDate(instant));
 }
 
 /** `14:30 20/11/2026` */

@@ -5,6 +5,7 @@ import {
   formatDate,
   formatDateTime,
   formatDuration,
+  formatIsoDate,
   formatTripTime,
   timeSlots,
   vietnamDate,
@@ -50,6 +51,7 @@ describe('display formats', () => {
   it('formats dates and times in Vietnam time', () => {
     expect(formatDate(instant)).toBe('20/11/2026');
     expect(formatDateTime(instant)).toBe('14:30 20/11/2026');
+    expect(formatIsoDate('2031-01-05')).toBe('05/01/2031');
   });
 
   it('adds the weekday for trip times', () => {
