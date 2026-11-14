@@ -11,6 +11,7 @@ import {
 
 import { SessionsService } from '../auth/sessions.service.js';
 import { AppException } from '../common/errors/app.exception.js';
+import { overallLicenseStatus } from '../driver-licenses/driver-licenses.mapper.js';
 import { type Prisma } from '../generated/prisma/client.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -25,7 +26,7 @@ const SUMMARY_SELECT = {
   status: true,
   emailVerifiedAt: true,
   createdAt: true,
-  driverLicense: { select: { status: true } },
+  driverLicenses: { select: { status: true } },
   _count: { select: { cars: true } },
 } as const satisfies Prisma.UserSelect;
 
@@ -39,7 +40,7 @@ const toSummary = (user: SummaryRecord): ConsoleUserSummary => ({
   role: user.role,
   status: user.status,
   emailVerified: user.emailVerifiedAt !== null,
-  driverLicenseStatus: user.driverLicense?.status ?? null,
+  driverLicenseStatus: overallLicenseStatus(user.driverLicenses.map((l) => l.status)),
   carCount: user._count.cars,
   createdAt: user.createdAt.toISOString(),
 });

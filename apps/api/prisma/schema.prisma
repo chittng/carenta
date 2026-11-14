@@ -44,7 +44,7 @@ model User {
   createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  driverLicense          DriverLicense?
+  driverLicenses         DriverLicense[]
   wallet                 Wallet?
   bankAccount            BankAccount?
   withdrawalRequests     WithdrawalRequest[]
@@ -157,14 +157,17 @@ enum DriverLicenseClass {
   LEGACY_FE
 }
 
+// A user has at most one current license (APPROVED or EXPIRED) and at most one submission
+// (PENDING or REJECTED); partial unique indexes in SQL. A renewal waits for review while
+// the approved license stays usable, and replaces it once approved (decided 2026-11-14).
 model DriverLicense {
   id              String              @id @default(uuid(7)) @db.Uuid
-  userId          String              @unique @map("user_id") @db.Uuid
+  userId          String              @map("user_id") @db.Uuid
   fullName        String              @map("full_name")
   licenseNumber   String              @map("license_number")
   licenseClass    DriverLicenseClass  @map("license_class")
   dateOfBirth     DateTime            @map("date_of_birth") @db.Date
-  expiresOn       DateTime?           @map("expires_on") @db.Date // null: no expiry
+  expiresOn       DateTime            @map("expires_on") @db.Date
   // Object keys in the private bucket
   frontImageKey   String              @map("front_image_key")
   backImageKey    String              @map("back_image_key")
@@ -179,6 +182,7 @@ model DriverLicense {
   user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   reviewedBy User? @relation("DriverLicenseReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
+  @@index([userId])
   @@index([status, submittedAt])
   @@index([licenseNumber])
   @@map("driver_licenses")

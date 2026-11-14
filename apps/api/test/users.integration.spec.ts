@@ -176,6 +176,7 @@ describe.runIf(process.env.INTEGRATION === '1')('user profiles', () => {
           licenseNumber: '012345678901',
           licenseClass: 'B',
           dateOfBirth: new Date('1995-04-30T00:00:00.000Z'),
+          expiresOn: new Date('2035-04-30T00:00:00.000Z'),
           frontImageKey: 'driver-licenses/front.jpg',
           backImageKey: 'driver-licenses/back.jpg',
         },

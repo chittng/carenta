@@ -56,6 +56,12 @@ export const ErrorCode = {
   CATALOG_DUPLICATE: 'CATALOG_DUPLICATE',
   /** Locking an account that is already locked, or unlocking one that is not. */
   USER_STATUS_CONFLICT: 'USER_STATUS_CONFLICT',
+
+  // Driver licenses
+  /** Another account already uses this license number (pending or approved). */
+  DRIVER_LICENSE_TAKEN: 'DRIVER_LICENSE_TAKEN',
+  /** Reviewing a license that is not pending, or approving one that has expired. */
+  DRIVER_LICENSE_STATUS_CONFLICT: 'DRIVER_LICENSE_STATUS_CONFLICT',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

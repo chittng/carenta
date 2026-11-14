@@ -31,6 +31,14 @@
 
 Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thường. Họ chỉ bị chặn khi bấm **Đặt xe**.
 
+**GPLX**:
+
+- Người dùng nộp ảnh hai mặt cùng họ tên, số GPLX, hạng, ngày sinh và ngày hết hạn. Ảnh nằm trong bucket private, chỉ người nộp và admin xem được. Admin duyệt hoặc từ chối kèm lý do; kết quả được gửi email.
+- **Nộp lại** lúc nào cũng được. GPLX đã duyệt vẫn dùng để thuê xe cho tới khi bản mới được duyệt; bản mới bị từ chối thì bản cũ vẫn giữ. Bản mới được duyệt thì thay bản cũ.
+- **Mỗi số GPLX chỉ gắn với một tài khoản**: số đang chờ duyệt hoặc đã duyệt ở tài khoản khác thì không nộp được, người dùng được hướng dẫn liên hệ hỗ trợ.
+- **[Đề xuất]** Số GPLX gồm 12 chữ số. Người nộp phải đủ 18 tuổi; GPLX nộp lên phải còn hạn. Admin không duyệt được GPLX đã hết hạn.
+- **[Đề xuất]** Hạng được chấp nhận: mọi hạng lái được ô tô theo luật mới (B, C1, C, D1, D2, D và các hạng kéo rơ moóc BE, C1E, CE, D1E, D2E, DE) và theo luật cũ (B1, B2, C, D, E, FB2, FC, FD, FE). "Hạng D1 trở lên" cho xe từ 10 chỗ là D1, D2, D, D1E, D2E, DE và D, E, FD, FE cũ.
+
 ### Tài khoản và đăng nhập
 
 - **Chưa xác thực email**: vẫn đăng nhập, xem và tìm xe, sửa hồ sơ được. Bị chặn khi **đặt xe, đăng xe, nộp GPLX, nhắn tin, rút tiền**. Có nút gửi lại email xác thực.
@@ -230,11 +238,11 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 
 ### 12.2 Giấy phép lái xe
 
-- Người thuê phải đủ **18 tuổi** trở lên. GPLX phải là **hạng B trở lên**, bao gồm hạng B1, B2 theo luật cũ.
+- Người thuê phải đủ **18 tuổi** trở lên. GPLX phải là **hạng B trở lên**, bao gồm hạng B1, B2 theo luật cũ. **[Đề xuất]** Tuổi tính vào ngày nhận xe.
 - GPLX phải **còn hạn đến hết ngày trả xe**.
 - Người có GPLX **hạng B1 cũ (chỉ lái xe số tự động)** chỉ được thuê xe số tự động.
 - Xe từ 10 chỗ trở lên cần GPLX **hạng D1 trở lên**.
-- Hệ thống gửi email nhắc **30 ngày trước** khi GPLX hết hạn. GPLX đã hết hạn chuyển về trạng thái "chưa xác minh".
+- Hệ thống gửi email nhắc **30 ngày trước** khi GPLX hết hạn (lúc 9:00, không gửi nếu đã nộp bản mới đang chờ duyệt). GPLX đã hết hạn chuyển về trạng thái "chưa xác minh" từ 0:00 ngày hôm sau, giờ Việt Nam.
 
 ### 12.3 Thay đổi thông tin xe
 

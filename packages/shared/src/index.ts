@@ -6,6 +6,7 @@ export * from './auth.js';
 export * from './cars.js';
 export * from './console.js';
 export * from './constants.js';
+export * from './driver-license.js';
 export * from './errors.js';
 export * from './money.js';
 export * from './pricing.js';

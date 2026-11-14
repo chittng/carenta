@@ -36,6 +36,11 @@ export interface EmailTemplateData {
   'car.hidden': CarEmail & { reason: string };
   'car.unhidden': CarEmail;
   'car.removed': CarEmail & { reason: string };
+  /** Driver license review (spec §3, §10). Dates are already formatted, e.g. 30/04/2027. */
+  'driver-license.approved': { fullName: string; licenseClass: string; expiresOn: string };
+  'driver-license.rejected': { fullName: string; reason: string };
+  /** 30 days before the approved license expires (spec §12.2). */
+  'driver-license.expiring': { fullName: string; expiresOn: string };
   /** An admin locked or unlocked the account (spec §12.5). */
   'account.locked': { fullName: string; reason: string };
   'account.unlocked': { fullName: string };
@@ -174,6 +179,49 @@ const EMAIL_TEMPLATES: { [N in EmailTemplateName]: EmailTemplate<EmailTemplateDa
           'Xe của bạn đã bị gỡ khỏi Carenta và không thể cho thuê nữa. Các chuyến đã xác nhận vẫn giữ nguyên.',
         reason: data.reason,
       }),
+  },
+  'driver-license.approved': {
+    build: ({ fullName, licenseClass, expiresOn }, { webUrl }) => ({
+      subject: 'GPLX của bạn đã được duyệt',
+      heading: 'GPLX đã được duyệt',
+      blocks: [
+        paragraph('Xin chào ', { bold: fullName }, ','),
+        paragraph('GPLX của bạn đã được duyệt. Bạn đã có thể đặt xe trên Carenta.'),
+        details([
+          ['Hạng', licenseClass],
+          ['Hết hạn', expiresOn],
+        ]),
+        button('Tìm xe', `${webUrl}/tim-xe`),
+        note('Carenta sẽ nhắc bạn 30 ngày trước khi GPLX hết hạn.'),
+      ],
+    }),
+  },
+  'driver-license.rejected': {
+    build: ({ fullName, reason }, { webUrl }) => ({
+      subject: 'GPLX của bạn chưa được duyệt',
+      heading: 'GPLX chưa được duyệt',
+      blocks: [
+        paragraph('Xin chào ', { bold: fullName }, ','),
+        paragraph('Rất tiếc, GPLX bạn nộp chưa được duyệt.'),
+        details([['Lý do', reason]]),
+        paragraph('Bạn có thể nộp lại GPLX với ảnh và thông tin chính xác.'),
+        button('Nộp lại GPLX', `${webUrl}/tai-khoan`),
+      ],
+    }),
+  },
+  'driver-license.expiring': {
+    build: ({ fullName, expiresOn }, { webUrl }) => ({
+      subject: 'GPLX của bạn sắp hết hạn',
+      heading: 'GPLX sắp hết hạn',
+      blocks: [
+        paragraph('Xin chào ', { bold: fullName }, ','),
+        paragraph(
+          `GPLX của bạn sẽ hết hạn vào ngày ${expiresOn}. Sau ngày này bạn sẽ không đặt được xe mới, và không thuê được chuyến nào kéo dài qua ngày hết hạn.`,
+        ),
+        paragraph('Nếu đã đổi GPLX mới, hãy nộp lại để tiếp tục thuê xe không bị gián đoạn.'),
+        button('Cập nhật GPLX', `${webUrl}/tai-khoan`),
+      ],
+    }),
   },
   'account.locked': {
     build: ({ fullName, reason }) => ({

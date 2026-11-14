@@ -7,6 +7,7 @@ import { CarsModule } from './cars/cars.module.js';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { AppConfigModule } from './config/config.module.js';
 import { ConsoleModule } from './console/console.module.js';
+import { DriverLicensesModule } from './driver-licenses/driver-licenses.module.js';
 import { HealthModule } from './health/health.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
 import { MailModule } from './mail/mail.module.js';
@@ -27,6 +28,7 @@ import { UsersModule } from './users/users.module.js';
     CarsModule,
     UsersModule,
     ConsoleModule,
+    DriverLicensesModule,
     HealthModule,
   ],
   providers: [
