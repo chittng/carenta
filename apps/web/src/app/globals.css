@@ -33,6 +33,8 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-border: var(--warning-border);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -76,6 +78,9 @@
   --warning: oklch(0.987 0.022 95.277);
   --warning-foreground: oklch(0.279 0.077 45.635);
   --warning-border: oklch(0.924 0.12 95.746);
+  /* Done/approved states (emerald). */
+  --success: oklch(0.979 0.021 166.113);
+  --success-foreground: oklch(0.432 0.095 166.913);
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.869 0.022 252.894);
   --ring: oklch(0.623 0.214 259.815);

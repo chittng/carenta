@@ -92,6 +92,9 @@ export const AUTOMATIC_ONLY_LICENSE_CLASSES: ReadonlySet<DriverLicenseClass> =
 export const LARGE_CAR_MIN_SEATS = 10;
 export const MIN_RENTER_AGE = 18;
 
+/** The holder is emailed this many days before the license expires (spec §12.2). */
+export const DRIVER_LICENSE_EXPIRY_REMINDER_DAYS = 30;
+
 // ─── Eligibility ────────────────────────────────────────────────────────────
 
 export const RentalEligibilityIssue = {
