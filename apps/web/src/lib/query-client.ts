@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 
 import { ErrorCode } from '@carenta/shared';
 
+import { api } from './api/client';
 import { ApiRequestError, errorMessage } from './api/errors';
 
 declare module '@tanstack/react-query' {
@@ -29,7 +30,26 @@ function shouldRetry(failureCount: number, error: Error): boolean {
   return failureCount < MAX_RETRIES;
 }
 
+async function resendFromToast() {
+  try {
+    await api.post('/auth/resend-verification');
+    toast.success('Đã gửi lại email xác thực. Link có hiệu lực 24 giờ.');
+  } catch (error) {
+    toast.error(errorMessage(error));
+  }
+}
+
 export function toastError(error: unknown) {
+  // Actions that need a verified email (spec §3) always come with a way to get the link again.
+  if (error instanceof ApiRequestError && error.code === ErrorCode.EMAIL_NOT_VERIFIED) {
+    toast.error(error.message, {
+      action: {
+        label: 'Gửi lại email',
+        onClick: () => void resendFromToast(),
+      },
+    });
+    return;
+  }
   toast.error(errorMessage(error));
 }
 

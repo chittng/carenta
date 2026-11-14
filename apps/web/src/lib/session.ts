@@ -2,11 +2,12 @@
 
 import { hashKey, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
-import { type AuthUser } from '@carenta/shared';
+import { type AuthUser, ErrorCode } from '@carenta/shared';
 
 import { api } from './api/client';
-import { ApiRequestError } from './api/errors';
+import { ApiRequestError, errorMessage } from './api/errors';
 import { SESSION_QUERY_KEY } from './query-client';
 
 /** Where to send a visitor who must sign in; CARENTA-16 brings them back to `next`. */
@@ -47,6 +48,31 @@ export function useLogout() {
       });
       router.push('/');
       router.refresh();
+    },
+  });
+}
+
+/** Sends a new verification link (spec §3: 3 per hour, 60 s apart; the API enforces it). */
+export function resendVerificationEmail(): Promise<void> {
+  return api.post('/auth/resend-verification');
+}
+
+export function useResendVerification() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resendVerificationEmail,
+    meta: { errorToast: false },
+    onSuccess: () => {
+      toast.success('Đã gửi lại email xác thực. Link có hiệu lực 24 giờ.');
+    },
+    onError: (error) => {
+      // Verified in another tab meanwhile: refresh the session so the reminders go away.
+      if (error instanceof ApiRequestError && error.code === ErrorCode.EMAIL_ALREADY_VERIFIED) {
+        void queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+        toast.success(error.message);
+        return;
+      }
+      toast.error(errorMessage(error));
     },
   });
 }

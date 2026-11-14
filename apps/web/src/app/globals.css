@@ -30,6 +30,9 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-border: var(--warning-border);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -69,6 +72,10 @@
   --accent: oklch(0.968 0.007 247.896);
   --accent-foreground: oklch(0.208 0.042 265.755);
   --destructive: oklch(0.577 0.245 27.325);
+  /* Notices that need action but are not errors, e.g. the verify-email banner (amber). */
+  --warning: oklch(0.987 0.022 95.277);
+  --warning-foreground: oklch(0.279 0.077 45.635);
+  --warning-border: oklch(0.924 0.12 95.746);
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.869 0.022 252.894);
   --ring: oklch(0.623 0.214 259.815);

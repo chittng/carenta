@@ -42,6 +42,8 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 ### Tài khoản và đăng nhập
 
 - **Chưa xác thực email**: vẫn đăng nhập, xem và tìm xe, sửa hồ sơ được. Bị chặn khi **đặt xe, đăng xe, nộp GPLX, nhắn tin, rút tiền**. Có nút gửi lại email xác thực.
+- **Sau khi đăng ký** (chốt 2026-11-14): người dùng được đăng nhập luôn và quay lại trang đang xem trước đó (không có thì về trang chủ). Một **banner nhắc xác thực email** có nút gửi lại hiện ở đầu trang; người dùng tắt được banner cho tới hết phiên trình duyệt. Thao tác bị chặn vì chưa xác thực luôn báo lý do kèm nút gửi lại email.
+- **Trang cần đăng nhập** (chuyến của tôi, xe của tôi, đơn cho thuê, ví, tin nhắn, tài khoản, đặt xe): khách chưa đăng nhập được chuyển tới trang đăng nhập, đăng nhập xong thì quay lại đúng trang đó. Đã đăng nhập mà mở trang đăng nhập hoặc đăng ký thì được chuyển đi luôn.
 - **Phiên đăng nhập**: không dùng 30 ngày thì phải đăng nhập lại. Mỗi thiết bị là một phiên riêng.
 - **Link trong email**: link xác thực email có hiệu lực **24 giờ**, link đặt lại mật khẩu **30 phút**. Mỗi link chỉ dùng một lần; gửi link mới thì link cũ mất hiệu lực. Đặt lại mật khẩu bằng link cũng tính là đã xác thực email.
 - **Mật khẩu**: không có quy tắc độ mạnh, chỉ cần không để trống. **[Đề xuất]** Tối đa 128 ký tự (giới hạn kỹ thuật).

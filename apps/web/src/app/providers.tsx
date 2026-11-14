@@ -19,7 +19,12 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={getQueryClient()}>
       {children}
-      <Toaster richColors closeButton />
+      {/* On phones toasts sit above the bottom tab bar (4rem + safe area). */}
+      <Toaster
+        richColors
+        closeButton
+        mobileOffset={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
+      />
     </QueryClientProvider>
   );
 }

@@ -69,6 +69,19 @@ describe('applyApiError', () => {
     ]);
   });
 
+  it('puts business errors named in codeFields on their field', () => {
+    const setError = vi.fn<UseFormSetError<Values>>();
+    applyApiError<Values>(
+      new ApiRequestError(409, ErrorCode.EMAIL_TAKEN, 'Email này đã được đăng ký.'),
+      setError,
+      FIELDS,
+      { [ErrorCode.EMAIL_TAKEN]: 'email' },
+    );
+    expect(setError.mock.calls).toEqual([
+      ['email', { type: 'server', message: 'Email này đã được đăng ký.' }, { shouldFocus: true }],
+    ]);
+  });
+
   it('leaves non-API errors to the caller', () => {
     const setError = vi.fn<UseFormSetError<Values>>();
     expect(applyApiError<Values>(new Error('boom'), setError, FIELDS)).toBe(false);
