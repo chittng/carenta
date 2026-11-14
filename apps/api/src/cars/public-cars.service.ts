@@ -3,20 +3,15 @@ import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import {
   APPROX_LOCATION_RADIUS_M,
   type CarQuoteInput,
-  distanceKm,
   ErrorCode,
   maskLicensePlate,
   paginationQuerySchema,
   type PriceQuote,
   type PublicCar,
   type PublicCarReviewPage,
-  type QuoteErrorCode,
-  quoteRental,
   tripWindowIssue,
-  vietnamDate,
 } from '@carenta/shared';
 
-import { fromDateOnly, toDateOnly } from '../common/dates.js';
 import { AppException } from '../common/errors/app.exception.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -25,6 +20,7 @@ import { UsersService } from '../users/users.service.js';
 import { freeForTripSql } from './availability.js';
 import { modelWithMake, toDeliveryView, toPricingView } from './cars.mapper.js';
 import { listedCarWhere } from './public-cars.policy.js';
+import { QUOTE_CAR_SELECT, rentalQuote } from './rental-quote.js';
 
 /** No exact coordinates, address line, documents or revisions are even selected. */
 const PUBLIC_CAR_SELECT = {
@@ -71,31 +67,8 @@ const PUBLIC_CAR_SELECT = {
   _count: { select: { bookings: { where: { status: 'COMPLETED' } } } },
 } as const satisfies Prisma.CarSelect;
 
-const QUOTE_CAR_SELECT = {
-  id: true,
-  pricing: true,
-  depositAmount: true,
-  bufferMinutes: true,
-  approxLatitude: true,
-  approxLongitude: true,
-  deliveryEnabled: true,
-  deliveryMaxRadiusKm: true,
-  deliveryFreeRadiusKm: true,
-  deliveryFeePerKm: true,
-} as const satisfies Prisma.CarSelect;
-
 const notFound = () =>
   new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, 'Không tìm thấy xe đang hiển thị.');
-
-const QUOTE_ERROR: Record<QuoteErrorCode, ErrorCode> = {
-  INVALID_RANGE: ErrorCode.VALIDATION_FAILED,
-  OFF_STEP: ErrorCode.VALIDATION_FAILED,
-  TOO_SHORT: ErrorCode.RENTAL_TOO_SHORT,
-  TOO_LONG: ErrorCode.RENTAL_TOO_LONG,
-  NO_PRICE: ErrorCode.RENTAL_PRICE_UNAVAILABLE,
-  DELIVERY_UNAVAILABLE: ErrorCode.DELIVERY_UNAVAILABLE,
-  DELIVERY_TOO_FAR: ErrorCode.DELIVERY_TOO_FAR,
-};
 
 type ReviewQuery = { page: number; pageSize: number };
 
@@ -219,42 +192,7 @@ export class PublicCarsService {
           select: QUOTE_CAR_SELECT,
         });
         if (!car?.pricing) throw notFound();
-        const holidays = await tx.holiday.findMany({
-          where: {
-            date: {
-              gte: fromDateOnly(vietnamDate(startAt)),
-              lte: fromDateOnly(vietnamDate(endAt)),
-            },
-          },
-          select: { date: true },
-        });
-        // Deliberately use the PUBLIC fixed point for both radius and fee (decided 2026-11-14).
-        // CARENTA-29 must use the same origin; using exact coordinates exposes them by probing.
-        const deliveryDistanceKm =
-          input.pickupMethod === 'DELIVERY' && input.deliveryLocation
-            ? distanceKm(
-                {
-                  latitude: car.approxLatitude.toNumber(),
-                  longitude: car.approxLongitude.toNumber(),
-                },
-                input.deliveryLocation,
-              )
-            : null;
-        const priced = quoteRental({
-          pricing: car.pricing,
-          depositAmount: car.depositAmount,
-          delivery: toDeliveryView(car),
-          startAt,
-          endAt,
-          holidays: holidays.map((holiday) => toDateOnly(holiday.date)),
-          deliveryDistanceKm,
-        });
-        if (!priced.ok)
-          throw new AppException(
-            HttpStatus.UNPROCESSABLE_ENTITY,
-            QUOTE_ERROR[priced.code],
-            priced.message,
-          );
+        const priced = await rentalQuote(tx, car, input);
 
         const blockedUntil = new Date(endAt.getTime() + car.bufferMinutes * 60_000);
         const [row] = await tx.$queryRaw<{ free: boolean }[]>`

@@ -10,6 +10,8 @@ import {
 } from '@carenta/shared';
 
 import { SessionsService } from '../auth/sessions.service.js';
+import { BookingJobOutboxService } from '../bookings/booking-job-outbox.service.js';
+import { BookingsService } from '../bookings/bookings.service.js';
 import { AppException } from '../common/errors/app.exception.js';
 import { overallLicenseStatus } from '../driver-licenses/driver-licenses.mapper.js';
 import { type Prisma } from '../generated/prisma/client.js';
@@ -51,7 +53,8 @@ const userNotFound = () =>
 /**
  * Users in Console (spec §11): search, details, lock and unlock (decided 2026-11-14: a
  * reason is required, every session ends at once, the user is emailed; admins cannot be
- * locked). Cancelling the user's bookings on lock (spec §12.5) comes with bookings.
+ * locked). Unpaid bookings are cancelled atomically on lock. Paid-booking refunds and
+ * cancellation are implemented with CARENTA-30/32; ongoing trips continue (spec §12.5).
  */
 @Injectable()
 export class ConsoleUsersService {
@@ -62,6 +65,8 @@ export class ConsoleUsersService {
     @Inject(SessionsService) private readonly sessions: SessionsService,
     @Inject(UploadsService) private readonly uploads: UploadsService,
     @Inject(MailService) private readonly mail: MailService,
+    @Inject(BookingsService) private readonly bookings: BookingsService,
+    @Inject(BookingJobOutboxService) private readonly bookingJobs: BookingJobOutboxService,
   ) {}
 
   async list(query: ConsoleUserListQuery): Promise<Page<ConsoleUserSummary>> {
@@ -137,34 +142,44 @@ export class ConsoleUsersService {
    * only shows cars of active owners (CARENTA-23).
    */
   async lock(adminId: string, userId: string, reason: string): Promise<ConsoleUser> {
-    const user = await this.prisma.$transaction(async (tx) => {
-      const found = await tx.user.findUnique({
-        where: { id: userId },
-        select: { id: true, email: true, fullName: true, role: true, status: true },
-      });
-      if (!found) throw userNotFound();
-      if (found.role === 'ADMIN' || found.id === adminId) {
-        throw new AppException(
-          HttpStatus.FORBIDDEN,
-          ErrorCode.FORBIDDEN,
-          'Không thể khoá tài khoản admin.',
+    const user = await this.prisma.$transaction(
+      async (tx) => {
+        const found = await tx.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, fullName: true, role: true, status: true },
+        });
+        if (!found) throw userNotFound();
+        if (found.role === 'ADMIN' || found.id === adminId) {
+          throw new AppException(
+            HttpStatus.FORBIDDEN,
+            ErrorCode.FORBIDDEN,
+            'Không thể khoá tài khoản admin.',
+          );
+        }
+        // Conditional update, so two admins locking at once do not both succeed.
+        const { count } = await tx.user.updateMany({
+          where: { id: userId, status: UserStatus.ACTIVE },
+          data: { status: UserStatus.LOCKED, lockedAt: new Date(), lockReason: reason },
+        });
+        if (count === 0) {
+          throw new AppException(
+            HttpStatus.CONFLICT,
+            ErrorCode.USER_STATUS_CONFLICT,
+            'Tài khoản đã bị khoá.',
+          );
+        }
+        const cancelledBookings = await this.bookings.cancelUnpaidForUser(
+          tx,
+          userId,
+          adminId,
+          new Date(),
         );
-      }
-      // Conditional update, so two admins locking at once do not both succeed.
-      const { count } = await tx.user.updateMany({
-        where: { id: userId, status: UserStatus.ACTIVE },
-        data: { status: UserStatus.LOCKED, lockedAt: new Date(), lockReason: reason },
-      });
-      if (count === 0) {
-        throw new AppException(
-          HttpStatus.CONFLICT,
-          ErrorCode.USER_STATUS_CONFLICT,
-          'Tài khoản đã bị khoá.',
-        );
-      }
-      return found;
-    });
+        return { ...found, cancelledBookings };
+      },
+      { timeout: 15_000 },
+    );
     await this.sessions.revokeAllForUser(userId);
+    await Promise.all(user.cancelledBookings.map((id) => this.bookingJobs.flushBooking(id)));
     await this.notify(() =>
       this.mail.send('account.locked', {
         to: user.email,
