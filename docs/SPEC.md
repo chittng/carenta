@@ -106,7 +106,7 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - **Nhận tại chỗ**: luôn có. Địa chỉ trên trang công khai chỉ hiển thị **gần đúng** (phường/quận, vòng tròn trên bản đồ). Địa chỉ chính xác hiện ra sau khi đơn được xác nhận.
 - **Giao tận nơi** (tuỳ chọn): chủ xe đặt bán kính tối đa (km) và phí giao (đ/km, hoặc miễn phí trong X km).
 - **Phí giao xe** = (khoảng cách − số km miễn phí) × phí mỗi km, không âm. Ví dụ: miễn phí 5 km, 10.000đ/km, giao 8 km → 30.000đ. Số km miễn phí không lớn hơn bán kính giao.
-- **Khoảng cách giao xe** là đường chim bay từ vị trí xe đến địa chỉ giao, làm tròn lên km nguyên. Địa chỉ xa hơn bán kính giao thì không đặt giao xe được.
+- **Khoảng cách giao xe** là đường chim bay từ **điểm gần đúng cố định đang hiển thị công khai** của xe đến địa chỉ giao, làm tròn lên km nguyên. Cùng điểm này được dùng để tính phí và kiểm tra bán kính giao ở cả báo giá lẫn tạo đơn; không tính từ vị trí thật để tránh dò địa chỉ xe qua việc thử nhiều điểm giao. Địa chỉ xa hơn bán kính giao thì không đặt giao xe được. (Chốt 2026-11-14.)
 - **[Đề xuất]** Bán kính giao tối đa 50 km, phí giao từ 0 đến 100.000đ mỗi km.
 
 ### 4.5 Chế độ duyệt đơn
@@ -142,6 +142,11 @@ Chủ xe chọn cho từng xe:
 ### 5.2 Trang chi tiết xe
 
 Gồm: bộ ảnh, thông số, tiện nghi, quy định, vị trí gần đúng, bảng giá, lịch trống, hồ sơ chủ xe (đánh giá, tỉ lệ phản hồi, số chuyến), đánh giá của xe. Bên cạnh có **khung đặt xe** tính giá trực tiếp.
+
+- **API chi tiết** chỉ trả xe đang hiển thị, cùng điều kiện với tìm kiếm. Luôn che biển số và dùng điểm gần đúng cố định, kể cả khi chủ xe gọi; không trả địa chỉ chính xác, giấy tờ, dữ liệu duyệt hay bản sửa chờ duyệt. Biển 5 số che dạng `51K-***.45`; biển 4 số che dạng `51K-**34`.
+- **Đánh giá của xe** chỉ gồm đánh giá người thuê → chủ xe trên đơn của xe đó, đã được công bố. Điểm trung bình và số đánh giá tính trên cùng tập này; số chuyến là số đơn đã hoàn tất của xe. Chi tiết kèm trang đầu đánh giá; API phân trang riêng trả đánh giá mới công bố trước, dùng quy ước phân trang chung (mặc định 20, tối đa 100).
+- **Báo giá** không cần đăng nhập, xác thực email hoặc GPLX. Nhận thời gian và hình thức nhận xe; giao xe cần toạ độ điểm giao. Kiểm tra khung giờ như tìm kiếm, thời gian thuê tối thiểu/tối đa, hỗ trợ giao xe/bán kính giao và lịch trống có đệm. Lịch bận thì báo lỗi, không trả báo giá. Tính bằng hàm dùng chung với bảng giá và ngày lễ hiện tại; trả các dòng giá, tiền thuê sau phụ phí/giảm giá, phí giao xe, tiền cọc và tổng tiền.
+- **Báo giá không giữ chỗ hoặc chốt giá.** Tạo đơn phải kiểm tra lịch và tính lại giá trong transaction; phí giao xe dùng cùng điểm gần đúng như báo giá. Lịch bận công khai vẫn lấy qua API theo tháng (§4.3).
 
 ### 5.3 Luồng đặt xe
 

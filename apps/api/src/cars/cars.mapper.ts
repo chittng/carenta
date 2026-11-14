@@ -1,5 +1,6 @@
 import {
   type CarDocument as CarDocumentDto,
+  type CarDelivery,
   type CarPricingView,
   CarRevisionStatus,
   effectiveLateFeePerHour,
@@ -55,6 +56,24 @@ export type OwnerCarSummaryRecord = Prisma.CarGetPayload<{
 
 type DocumentRecord = OwnerCarRecord['documents'][number];
 type PricingRecord = NonNullable<OwnerCarRecord['pricing']>;
+
+type DeliveryRecord = Pick<
+  OwnerCarRecord,
+  'deliveryEnabled' | 'deliveryMaxRadiusKm' | 'deliveryFeePerKm' | 'deliveryFreeRadiusKm'
+>;
+
+export function toDeliveryView(car: DeliveryRecord): CarDelivery | null {
+  return car.deliveryEnabled &&
+    car.deliveryMaxRadiusKm !== null &&
+    car.deliveryFeePerKm !== null &&
+    car.deliveryFreeRadiusKm !== null
+    ? {
+        maxRadiusKm: car.deliveryMaxRadiusKm,
+        feePerKm: car.deliveryFeePerKm,
+        freeRadiusKm: car.deliveryFreeRadiusKm,
+      }
+    : null;
+}
 
 export function toPricingView(pricing: PricingRecord): CarPricingView {
   return {
@@ -128,17 +147,7 @@ export async function toOwnerCar(uploads: UploadsService, car: OwnerCarRecord): 
     instantBook: car.instantBook,
     depositAmount: car.depositAmount,
     bufferMinutes: car.bufferMinutes,
-    delivery:
-      car.deliveryEnabled &&
-      car.deliveryMaxRadiusKm !== null &&
-      car.deliveryFeePerKm !== null &&
-      car.deliveryFreeRadiusKm !== null
-        ? {
-            maxRadiusKm: car.deliveryMaxRadiusKm,
-            feePerKm: car.deliveryFeePerKm,
-            freeRadiusKm: car.deliveryFreeRadiusKm,
-          }
-        : null,
+    delivery: toDeliveryView(car),
     pricing: car.pricing && toPricingView(car.pricing),
     photos: car.photos.map((photo) => ({
       id: photo.id,

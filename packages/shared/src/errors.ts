@@ -52,6 +52,13 @@ export const ErrorCode = {
   CAR_PHOTO_LIMIT: 'CAR_PHOTO_LIMIT',
   /** An owner block overlaps a booking that holds the calendar, including its buffer. */
   AVAILABILITY_BOOKING_CONFLICT: 'AVAILABILITY_BOOKING_CONFLICT',
+  /** A quote or booking request overlaps an owner block or a holding booking. */
+  CAR_UNAVAILABLE: 'CAR_UNAVAILABLE',
+  RENTAL_TOO_SHORT: 'RENTAL_TOO_SHORT',
+  RENTAL_TOO_LONG: 'RENTAL_TOO_LONG',
+  RENTAL_PRICE_UNAVAILABLE: 'RENTAL_PRICE_UNAVAILABLE',
+  DELIVERY_UNAVAILABLE: 'DELIVERY_UNAVAILABLE',
+  DELIVERY_TOO_FAR: 'DELIVERY_TOO_FAR',
 
   // Console
   /** A make, model or amenity with the same name (or code) already exists. */
