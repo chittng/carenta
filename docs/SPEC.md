@@ -115,6 +115,7 @@ Chủ xe chọn cho từng xe:
 
 - **Đặt nhanh**: người thuê thanh toán xong là đơn được xác nhận ngay.
 - **Duyệt tay**: chủ xe có **6 giờ** để chấp nhận hoặc từ chối. Hết hạn mà chưa trả lời thì đơn tự huỷ.
+  - Hạn duyệt là mốc sớm hơn giữa 6 giờ sau khi đặt và **30 phút trước giờ nhận xe**, để còn thời gian thanh toán. (Chốt 2026-11-14.)
 
 ### 4.6 Tiền cọc **[Đề xuất]**
 
@@ -157,6 +158,13 @@ Chọn thời gian + hình thức nhận xe
       → [Đặt nhanh]  Thanh toán → ĐÃ XÁC NHẬN
         [Duyệt tay]  Gửi yêu cầu → chủ xe chấp nhận → thanh toán trong 30 phút → ĐÃ XÁC NHẬN
 ```
+
+- **Đặt nhanh**: tạo đơn ở trạng thái CHỜ_THANH_TOÁN, chiếm lịch ngay, hạn thanh toán 30 phút từ lúc tạo. **Duyệt tay**: tạo CHỜ_DUYỆT và không chiếm lịch; nhiều yêu cầu có thể trùng nhau. Chủ xe chấp nhận đơn nào trước thì đơn đó giữ lịch. Chấp nhận thành công bắt đầu 30 phút chờ thanh toán. Hạn thanh toán luôn không vượt giờ nhận xe.
+- **Khi chấp nhận đơn duyệt tay**, kiểm tra lại xe đang hiển thị, tài khoản hai bên còn hoạt động, email người thuê đã xác thực, GPLX còn đủ điều kiện cho xe và toàn chuyến, cùng lịch trống với đệm đã chốt. Không còn hợp lệ thì báo lỗi và giữ CHỜ_DUYỆT đến khi hết hạn; không đổi giá theo bảng giá mới. Riêng sự kiện khoá tài khoản tự huỷ đơn chưa bắt đầu theo §12.5. Mốc cách giờ nhận tối thiểu 2 giờ được kiểm tra lúc tạo yêu cầu, không áp dụng lại khi chủ xe chấp nhận sát giờ. (Chốt 2026-11-14.)
+- **Gửi lại yêu cầu đặt xe**: mỗi lần đặt có một `requestId` UUID. Gửi lại cùng mã và nội dung trả về đơn đã tạo, với trạng thái hiện tại, giá/hạn cũ; không tạo thêm đơn hoặc kéo dài giữ chỗ. Cùng mã nhưng nội dung khác thì báo lỗi. Một mã chỉ áp dụng trong phạm vi tài khoản người thuê.
+- **Chốt dữ liệu**: API tự tính mọi khoản tiền và phí giao từ điểm gần đúng, ghi bản sao bảng giá, phụ phí, giảm giá, cọc, đệm, quy định, giới hạn km, chế độ duyệt, hoa hồng và địa điểm nhận xe lúc đặt. Đồng ý điều khoản/hợp đồng là bắt buộc; thời điểm đồng ý do server ghi. Số tiền của đơn lưu bằng số nguyên `BigInt` để hỗ trợ đầy đủ mức giá/thời lượng tại §4.2.
+- **Quyền xem đơn**: chỉ người thuê và chủ xe của đơn. Trước xác nhận: che biển số, vị trí xe gần đúng, ẩn số điện thoại hai bên; chủ xe chưa thấy địa chỉ giao chính xác, người thuê vẫn thấy địa chỉ mình nhập. Sau xác nhận, hai bên xem địa chỉ nhận xe đã chốt và số liên hệ. Giấy tờ xe và GPLX không nằm trong response đơn.
+- **Hết hạn**: tại đúng mốc hạn, đơn chưa thanh toán/chưa duyệt chuyển ĐÃ_HUỶ, giải phóng lịch nếu đang giữ. Job phải đọc trạng thái/hạn mới nhất; job cũ hoặc chạy lại không huỷ đơn đã xác nhận và không ghi trùng lịch sử. Các thao tác đọc đơn/đặt/duyệt cũng xử lý đơn đã quá hạn, để không phụ thuộc hoàn toàn vào độ trễ hàng đợi.
 
 ### 5.4 Trạng thái đơn
 
@@ -272,7 +280,7 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 
 ### 12.4 Trong chuyến
 
-- **Giữ chỗ khi thanh toán**: khi người thuê vào cổng thanh toán, lịch xe được giữ 15 phút. Quá 15 phút chưa thanh toán thì đơn tự huỷ.
+- **Giữ chỗ khi thanh toán**: lần đầu người thuê bắt đầu thanh toán, hạn có hiệu lực là mốc sớm hơn giữa hạn thanh toán hiện tại và **15 phút từ lần bắt đầu đầu tiên**. Không vượt giờ nhận xe; mở lại không gia hạn. Đúng hạn mà chưa thanh toán thì đơn tự huỷ. (Chốt 2026-11-14.)
 - **Trả xe trễ**: được ân hạn 30 phút. Sau đó tính phí trả trễ theo từng giờ, làm tròn lên. Mức phí do chủ xe đặt, mặc định bằng 10% giá ngày mỗi giờ. Xe không bật giá ngày thì chủ xe bắt buộc nhập mức phí này. Phí này trừ vào cọc.
 - **Gia hạn chuyến**: người thuê gửi yêu cầu gia hạn khi đang thuê. Lịch phải còn trống và chủ xe chấp nhận. Người thuê thanh toán phần tiền chênh qua VNPay.
 - **Chủ xe không giao xe**: người thuê báo trong vòng 2 giờ sau giờ nhận xe. Người thuê được hoàn 100%, chủ xe bị tính một lần huỷ.

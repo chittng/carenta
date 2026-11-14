@@ -640,6 +640,10 @@ model Booking {
   ownerId  String        @map("owner_id") @db.Uuid
   status   BookingStatus
 
+  // Optional for legacy/imported rows; the booking API requires an idempotency request id.
+  requestId          String? @map("request_id") @db.Uuid
+  requestFingerprint String? @map("request_fingerprint") @db.VarChar(64)
+
   // Half-open [start_at, end_at)
   startAt      DateTime @map("start_at") @db.Timestamptz(3)
   endAt        DateTime @map("end_at") @db.Timestamptz(3)
@@ -656,20 +660,21 @@ model Booking {
   // Price locked at booking time (spec §12.1). Never recomputed from the car's current price.
   pricingSnapshot       Json @map("pricing_snapshot") // copy of car_pricings and car rules used
   priceBreakdown        Json @map("price_breakdown") // line items shown to the renter
-  rentalAmount          Int  @map("rental_amount")
-  deliveryFee           Int  @map("delivery_fee")
-  depositAmount         Int  @map("deposit_amount")
+  rentalAmount          BigInt @map("rental_amount")
+  deliveryFee           BigInt @map("delivery_fee")
+  depositAmount         BigInt @map("deposit_amount")
   // rental_amount + delivery_fee + deposit_amount, paid in one go
-  totalAmount           Int  @map("total_amount")
+  totalAmount           BigInt @map("total_amount")
   commissionRatePercent Int  @map("commission_rate_percent")
-  commissionAmount      Int  @map("commission_amount")
+  commissionAmount      BigInt @map("commission_amount")
   // Settled on return, deducted from the deposit
-  lateFee               Int  @default(0) @map("late_fee")
-  extraKmFee            Int  @default(0) @map("extra_km_fee")
+  lateFee               BigInt @default(0) @map("late_fee")
+  extraKmFee            BigInt @default(0) @map("extra_km_fee")
 
   termsAcceptedAt    DateTime   @map("terms_accepted_at") @db.Timestamptz(3)
   approvalDeadlineAt DateTime?  @map("approval_deadline_at") @db.Timestamptz(3)
   paymentDeadlineAt  DateTime?  @map("payment_deadline_at") @db.Timestamptz(3)
+  checkoutStartedAt  DateTime?  @map("checkout_started_at") @db.Timestamptz(3)
   confirmedAt        DateTime?  @map("confirmed_at") @db.Timestamptz(3)
   pickedUpAt         DateTime?  @map("picked_up_at") @db.Timestamptz(3)
   returnedAt         DateTime?  @map("returned_at") @db.Timestamptz(3)
@@ -691,12 +696,38 @@ model Booking {
   dispute            Dispute?
   reviews            Review[]
   walletTransactions WalletTransaction[]
+  jobOutbox          BookingJobOutbox[]
 
+  @@unique([renterId, requestId])
   @@index([carId, startAt])
   @@index([renterId, createdAt])
   @@index([ownerId, createdAt])
   @@index([status])
+  @@index([status, approvalDeadlineAt])
+  @@index([status, paymentDeadlineAt])
   @@map("bookings")
+}
+
+enum BookingJobAction {
+  SCHEDULE
+  CANCEL
+}
+
+// Durable queue commands, written atomically with the booking transition and retried
+// until Valkey acknowledges them. Stable job ids make publishing idempotent.
+model BookingJobOutbox {
+  jobId     String           @id @map("job_id") @db.VarChar(200)
+  bookingId String           @map("booking_id") @db.Uuid
+  action    BookingJobAction
+  jobName   String           @map("job_name") @db.VarChar(100)
+  runAt     DateTime?        @map("run_at") @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
+  @@index([bookingId])
+  @@map("booking_job_outbox")
 }
 
 // Timeline of status changes, written by BookingStateMachine.
