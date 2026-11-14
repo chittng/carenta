@@ -4,7 +4,7 @@ import { type ReactNode, Suspense } from 'react';
 
 import { SessionRecovery } from '@/components/auth/session-recovery';
 import { ConsoleSidebar } from '@/components/console/console-sidebar';
-import { PageSpinner } from '@/components/layout/page-spinner';
+import { LoadingState } from '@/components/states/loading-state';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { getServerSessionUser } from '@/lib/api/server-session';
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 export default function ConsoleLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-1 flex-col">
-      <Suspense fallback={<PageSpinner />}>
+      <Suspense fallback={<LoadingState />}>
         <AdminOnly>{children}</AdminOnly>
       </Suspense>
     </div>

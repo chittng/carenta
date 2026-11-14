@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { PageSpinner } from '@/components/layout/page-spinner';
+import { LoadingState } from '@/components/states/loading-state';
 import { Button } from '@/components/ui/button';
 import { errorMessage } from '@/lib/api/errors';
 import { SESSION_QUERY_KEY } from '@/lib/query-client';
@@ -50,5 +50,5 @@ export function SessionRecovery() {
       </div>
     );
   }
-  return <PageSpinner label="Đang kiểm tra phiên đăng nhập…" />;
+  return <LoadingState label="Đang kiểm tra phiên đăng nhập…" />;
 }
