@@ -120,7 +120,7 @@ function AccountTab({ active }: { active: boolean }) {
               </li>
             </>
           ) : (
-            <SheetLink href={routes.myCars} onNavigate={close}>
+            <SheetLink href={routes.newCar} onNavigate={close}>
               <KeyRoundIcon aria-hidden />
               Cho thuê xe
             </SheetLink>

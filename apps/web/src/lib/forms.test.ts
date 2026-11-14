@@ -4,7 +4,7 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { ErrorCode, type LoginInput, loginSchema } from '@carenta/shared';
 
 import { ApiRequestError } from './api/errors';
-import { applyApiError, SERVER_ERROR_FIELD, useZodForm } from './forms';
+import { applyApiError, emptyFieldMessage, SERVER_ERROR_FIELD, useZodForm } from './forms';
 
 interface Values {
   email: string;
@@ -97,5 +97,26 @@ describe('useZodForm', () => {
     type Form = ReturnType<typeof useLoginForm>;
     expectTypeOf<Parameters<Form['register']>[0]>().toEqualTypeOf<'email' | 'password'>();
     expectTypeOf<Parameters<Parameters<Form['handleSubmit']>[0]>[0]>().toEqualTypeOf<LoginInput>();
+  });
+});
+
+describe('emptyFieldMessage', () => {
+  it('names the empty field instead of zod type jargon', () => {
+    const messages = { modelId: 'Vui lòng chọn dòng xe.' };
+    expect(
+      emptyFieldMessage({ code: 'invalid_type', input: undefined, path: ['modelId'] }, messages),
+    ).toBe('Vui lòng chọn dòng xe.');
+    expect(emptyFieldMessage({ code: 'invalid_value', input: null, path: ['bodyType'] })).toBe(
+      'Vui lòng điền mục này.',
+    );
+  });
+
+  it('keeps zod messages for filled-in values', () => {
+    expect(
+      emptyFieldMessage({ code: 'invalid_type', input: 'abc', path: ['year'] }),
+    ).toBeUndefined();
+    expect(
+      emptyFieldMessage({ code: 'too_small', input: undefined, path: ['year'] }),
+    ).toBeUndefined();
   });
 });

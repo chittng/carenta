@@ -8,7 +8,7 @@ const columns = [
     title: 'Khám phá',
     links: [
       { href: routes.search, label: 'Tìm xe' },
-      { href: routes.myCars, label: 'Cho thuê xe' },
+      { href: routes.newCar, label: 'Cho thuê xe' },
       { href: routes.guide, label: 'Hướng dẫn' },
     ],
   },
