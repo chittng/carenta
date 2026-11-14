@@ -135,6 +135,8 @@ Chủ xe chọn cho từng xe:
 - **Bộ lọc**: khoảng giá, hãng, kiểu thân xe, số chỗ, hộp số, nhiên liệu, đặt nhanh, giao tận nơi, tiện nghi.
 - **Sắp xếp**: giá, đánh giá, khoảng cách, mới nhất.
 - **Hai chế độ xem**: danh sách và **bản đồ** (OpenStreetMap + Leaflet, miễn phí).
+- **Trang `/tim-xe`**: bộ lọc, thời gian, sắp xếp, trang kết quả và chế độ xem được lưu trên URL để chia sẻ và khôi phục khi quay lại. Áp dụng tìm kiếm hoặc đổi bộ lọc/sắp xếp thì về trang đầu. Trên điện thoại, bộ lọc mở trong ngăn kéo từ dưới lên.
+- **Bản đồ tìm kiếm** hiển thị xe của trang kết quả hiện tại, nhãn giá quy đổi 1 ngày và vòng tròn vị trí gần đúng. Sau khi kéo bản đồ, nhấn **Tìm quanh đây** để tìm theo tâm mới với bán kính đang chọn (mặc định 10 km, tối đa 50 km); bỏ điều kiện tỉnh/thành, phường/xã cũ và giữ các tiêu chí còn lại. Chỉ kéo bản đồ chưa gửi tìm kiếm mới.
 - Chỉ hiện những xe **trống trong khoảng thời gian đã chọn**.
 - **Xe được hiện**: đã duyệt, không tạm ngưng, không bị ẩn hoặc gỡ, không đang bị ẩn do chủ xe huỷ nhiều, và chủ xe không bị khoá.
 - **Thời gian nhận và trả xe là tuỳ chọn.** Chưa chọn thì không lọc lịch trống và không có giá ước tính. Đã chọn thì kiểm tra như lúc đặt xe (bước 30 phút, giờ nhận cách hiện tại ít nhất 2 giờ và không quá 90 ngày), chỉ hiện xe trống cả chuyến (tính cả thời gian đệm, §4.3) và có thời gian thuê tối thiểu/tối đa phù hợp, kèm tiền thuê ước tính của chuyến.
