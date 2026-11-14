@@ -16,3 +16,9 @@ export function formatDateTime(date: Date): string {
   );
   return `${parts.hour}:${parts.minute} ${parts.day}/${parts.month}/${parts.year}`;
 }
+
+/** `30/04/2027` for a `@db.Date` value (midnight UTC): a calendar day, not an instant. */
+export function formatDate(date: Date): string {
+  const [year, month, day] = date.toISOString().slice(0, 10).split('-');
+  return `${day}/${month}/${year}`;
+}

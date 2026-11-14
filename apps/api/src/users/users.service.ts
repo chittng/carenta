@@ -16,6 +16,16 @@ import { UploadsService } from '../storage/uploads.service.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * The birth date on the user's license (decided 2026-11-14: no separate profile field):
+ * the one in use, else the latest submission.
+ */
+function licenseBirthDate(licenses: { status: string; dateOfBirth: Date }[]): string | null {
+  const license =
+    licenses.find((l) => l.status === 'APPROVED' || l.status === 'EXPIRED') ?? licenses[0];
+  return license ? toDateOnly(license.dateOfBirth) : null;
+}
+
 const PROFILE_SELECT = {
   id: true,
   email: true,
@@ -24,7 +34,7 @@ const PROFILE_SELECT = {
   phone: true,
   avatarKey: true,
   createdAt: true,
-  driverLicense: { select: { dateOfBirth: true } },
+  driverLicenses: { select: { status: true, dateOfBirth: true } },
 } as const;
 
 /** Profiles (spec §2, §13: `/tai-khoan`, `/nguoi-dung/[id]`). Password changes live in auth. */
@@ -49,7 +59,7 @@ export class UsersService {
       fullName: user.fullName,
       phone: user.phone,
       avatarUrl: user.avatarKey ? this.uploads.avatarUrl(user.avatarKey) : null,
-      dateOfBirth: user.driverLicense ? toDateOnly(user.driverLicense.dateOfBirth) : null,
+      dateOfBirth: licenseBirthDate(user.driverLicenses),
       joinedAt: user.createdAt.toISOString(),
     };
   }
