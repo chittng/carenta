@@ -1,0 +1,66 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  type FieldValues,
+  type Path,
+  useForm,
+  type UseFormProps,
+  type UseFormSetError,
+} from 'react-hook-form';
+import { type z } from 'zod';
+
+import { ErrorCode } from '@carenta/shared';
+
+import { ApiRequestError } from './api/errors';
+
+/**
+ * `useForm` validated by a zod schema from `@carenta/shared`, the same one the API checks.
+ * Field values are the schema's input; `handleSubmit` receives its parsed output (trimmed,
+ * lowercased emails and so on), which is what should be sent to the API.
+ */
+export function useZodForm<Input extends FieldValues, Output extends FieldValues>(
+  schema: z.ZodType<Output, Input>,
+  props?: Omit<UseFormProps<Input, unknown, Output>, 'resolver'>,
+) {
+  return useForm<Input, unknown, Output>({
+    mode: 'onTouched',
+    ...props,
+    // Explicit type arguments pick the zod 4 overload; inference lands on the zod 3 one.
+    resolver: zodResolver<Input, unknown, Output, z.ZodType<Output, Input>>(schema),
+  });
+}
+
+/** Where errors not tied to a field go; render `formState.errors.root?.server?.message`. */
+export const SERVER_ERROR_FIELD = 'root.server';
+
+/**
+ * Shows an API error on the form: each `VALIDATION_FAILED` detail on its field (the API
+ * reports paths like `pricing.weekdayPrice`, the same as react-hook-form's), anything else on
+ * `root.server`. Use with `meta: { errorToast: false }` on the mutation.
+ *
+ * Returns whether the error was an API error; other errors are left to the caller.
+ */
+export function applyApiError<Values extends FieldValues>(
+  error: unknown,
+  setError: UseFormSetError<Values>,
+  fields: readonly Path<Values>[],
+): boolean {
+  if (!(error instanceof ApiRequestError)) return false;
+
+  const details = error.code === ErrorCode.VALIDATION_FAILED ? error.details : [];
+  const unplaced: string[] = [];
+  let placed = false;
+  for (const detail of details) {
+    const field = fields.find((name) => name === detail.path);
+    if (field) {
+      setError(field, { type: 'server', message: detail.message }, { shouldFocus: !placed });
+      placed = true;
+    } else {
+      unplaced.push(detail.message);
+    }
+  }
+  if (!placed || unplaced.length > 0) {
+    const message = unplaced.length > 0 ? unplaced.join(' ') : error.message;
+    setError(SERVER_ERROR_FIELD, { type: 'server', message });
+  }
+  return true;
+}

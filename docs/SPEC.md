@@ -330,7 +330,8 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 | Thanh toán           | VNPay sandbox                                                                                |
 | Bản đồ               | Leaflet + OpenStreetMap. Gợi ý địa chỉ bằng Nominatim                                        |
 | Xác thực             | Email + mật khẩu, JWT (access + refresh token qua httpOnly cookie)                           |
-| Kiểm thử             | Vitest (API và `packages/shared`), Playwright (E2E cho các luồng chính)                      |
+| Web gọi API          | Qua `/api/v1` của chính trang web, Next.js chuyển tiếp sang API, nên cookie luôn cùng site   |
+| Kiểm thử             | Vitest (API, `packages/shared` và web), Playwright (E2E cho các luồng chính)                 |
 | Môi trường           | Docker Compose cho local (Postgres, Valkey, RustFS, Mailpit)                                 |
 | Deploy **[Đề xuất]** | Web lên Vercel. API, Postgres, Valkey lên Railway hoặc Render                                |
 
