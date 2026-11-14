@@ -316,6 +316,14 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 |            | `/console/tranh-chap`, `/console/rut-tien`                            | Xử lý tranh chấp, duyệt rút tiền                                                     |
 |            | `/console/cau-hinh`                                                   | Hoa hồng, ngày lễ, danh mục hãng/dòng xe/tiện nghi                                   |
 
+### Giao diện chung (chốt 2026-11-14)
+
+- **Màu thương hiệu** xanh dương `#2563EB`, nền trung tính xám xanh. **Font** Be Vietnam Pro. **Chỉ có giao diện sáng**, chưa có dark mode.
+- **Logo chữ** "Carenta" kèm biểu tượng chữ C trắng trên nền xanh.
+- **Desktop**: header có "Tìm xe", "Cho thuê xe"; chưa đăng nhập thì có "Đăng nhập", "Đăng ký"; đã đăng nhập thì có nút Tin nhắn và menu tài khoản (Chuyến của tôi, Xe của tôi, Đơn cho thuê, Ví Carenta, Tin nhắn, Tài khoản, Console nếu là admin, Đăng xuất). Footer có liên kết tới các trang nội dung tĩnh.
+- **Điện thoại**: thanh tab cố định dưới đáy gồm Tìm xe, Chuyến, Tin nhắn, Tài khoản. Tab Tài khoản mở ngăn kéo chứa các mục còn lại của menu tài khoản (chưa đăng nhập thì có "Cho thuê xe", "Đăng nhập", "Đăng ký").
+- **Console** có thanh bên (thu vào thành ngăn kéo trên điện thoại), chỉ admin vào được. Người dùng khác vào `/console` thấy trang 404; chưa đăng nhập thì được chuyển tới trang đăng nhập rồi quay lại.
+
 ## 14. Kiến trúc kỹ thuật
 
 | Thành phần           | Lựa chọn                                                                                     |
