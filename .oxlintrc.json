@@ -98,6 +98,7 @@
         "eqeqeq": "off",
         "no-shadow": "off",
         "react/set-state-in-effect": "off",
+        "react/no-unstable-nested-components": "off",
         "jsx-a11y/label-has-associated-control": "off",
         "jsx-a11y/prefer-tag-over-role": "off",
         "react/no-array-index-key": "off",

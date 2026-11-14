@@ -7,6 +7,8 @@ import { type ApiErrorDetail, apiErrorSchema, ErrorCode } from '@carenta/shared'
 export const ClientErrorCode = {
   /** The request never got an HTTP response: offline, DNS, CORS, or the API is down. */
   NETWORK_ERROR: 'NETWORK_ERROR',
+  /** The browser could not PUT a file to storage (network, expired link, rejected by S3). */
+  UPLOAD_FAILED: 'UPLOAD_FAILED',
 } as const;
 
 const NETWORK_MESSAGE = 'Không kết nối được tới máy chủ. Vui lòng kiểm tra mạng và thử lại.';
