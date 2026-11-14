@@ -91,6 +91,57 @@ export function effectiveLateFeePerHour(pricing: {
   return Math.round((pricing.dailyPrice * DEFAULT_LATE_FEE_PERCENT_OF_DAILY) / 100);
 }
 
+// ─── Trip window (spec §12.1) ───────────────────────────────────────────────
+
+/** Pickup is at least this many hours from now. */
+export const PICKUP_MIN_LEAD_HOURS = 2;
+/** Pickup is at most this many days from now. */
+export const BOOKING_HORIZON_DAYS = 90;
+
+const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * Checks the pickup and return times a renter picks, before any car is involved: return
+ * after pickup, both on 30-minute steps, pickup at least 2 hours and at most 90 days from
+ * now, and no longer than the longest trip any car allows. Returns the field at fault with
+ * a Vietnamese message, or null when the times are fine. Each car's own minimum and
+ * maximum length are checked by `quoteRental`.
+ */
+export function tripWindowIssue(
+  startAt: Date,
+  endAt: Date,
+  now: Date = new Date(),
+): { path: 'startAt' | 'endAt'; message: string } | null {
+  const step = TIME_STEP_MINUTES * 60 * 1000;
+  const start = startAt.getTime();
+  const end = endAt.getTime();
+  if (start % step !== 0) {
+    return { path: 'startAt', message: `Giờ nhận xe phải theo bước ${TIME_STEP_MINUTES} phút.` };
+  }
+  if (end % step !== 0) {
+    return { path: 'endAt', message: `Giờ trả xe phải theo bước ${TIME_STEP_MINUTES} phút.` };
+  }
+  if (end <= start) {
+    return { path: 'endAt', message: 'Giờ trả xe phải sau giờ nhận xe.' };
+  }
+  if (start < now.getTime() + PICKUP_MIN_LEAD_HOURS * HOUR_MS) {
+    return {
+      path: 'startAt',
+      message: `Giờ nhận xe phải cách hiện tại ít nhất ${PICKUP_MIN_LEAD_HOURS} giờ.`,
+    };
+  }
+  if (start > now.getTime() + BOOKING_HORIZON_DAYS * HOURS_PER_DAY * HOUR_MS) {
+    return {
+      path: 'startAt',
+      message: `Chỉ đặt xe trước tối đa ${BOOKING_HORIZON_DAYS} ngày.`,
+    };
+  }
+  if (end - start > MAX_RENTAL_DAYS_LIMIT * HOURS_PER_DAY * HOUR_MS) {
+    return { path: 'endAt', message: `Chuyến thuê tối đa ${MAX_RENTAL_DAYS_LIMIT} ngày.` };
+  }
+  return null;
+}
+
 // ─── Input ──────────────────────────────────────────────────────────────────
 
 /**

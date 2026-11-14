@@ -20,6 +20,14 @@ export const CAR_YEAR_MIN = 1990;
 export const CAR_SEATS_MIN = 2;
 export const CAR_SEATS_MAX = 16;
 
+/** [Đề xuất] Bounding box of Vietnam: car locations and search points must fall inside. */
+export const VIETNAM_BOUNDS = {
+  minLatitude: 8,
+  maxLatitude: 24,
+  minLongitude: 102,
+  maxLongitude: 110,
+};
+
 export const CarStatus = {
   DRAFT: 'DRAFT',
   PENDING_REVIEW: 'PENDING_REVIEW',
@@ -150,12 +158,12 @@ export const carLocationSchema = z.object({
   addressLine: text(255, 'địa chỉ'),
   latitude: z
     .number()
-    .min(8, { error: 'Vị trí phải nằm ở Việt Nam.' })
-    .max(24, { error: 'Vị trí phải nằm ở Việt Nam.' }),
+    .min(VIETNAM_BOUNDS.minLatitude, { error: 'Vị trí phải nằm ở Việt Nam.' })
+    .max(VIETNAM_BOUNDS.maxLatitude, { error: 'Vị trí phải nằm ở Việt Nam.' }),
   longitude: z
     .number()
-    .min(102, { error: 'Vị trí phải nằm ở Việt Nam.' })
-    .max(110, { error: 'Vị trí phải nằm ở Việt Nam.' }),
+    .min(VIETNAM_BOUNDS.minLongitude, { error: 'Vị trí phải nằm ở Việt Nam.' })
+    .max(VIETNAM_BOUNDS.maxLongitude, { error: 'Vị trí phải nằm ở Việt Nam.' }),
 });
 
 const carFields = {
