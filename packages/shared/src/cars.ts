@@ -70,6 +70,53 @@ export const CarRevisionStatus = {
 } as const;
 export type CarRevisionStatus = (typeof CarRevisionStatus)[keyof typeof CarRevisionStatus];
 
+// ─── Display names (spec §4.1) ──────────────────────────────────────────────
+
+export const BODY_TYPE_LABELS: Record<BodyType, string> = {
+  SEDAN: 'Sedan',
+  SUV: 'SUV',
+  CROSSOVER: 'Crossover',
+  MPV: 'MPV',
+  HATCHBACK: 'Hatchback',
+  PICKUP: 'Bán tải',
+};
+
+export const TRANSMISSION_LABELS: Record<Transmission, string> = {
+  MANUAL: 'Số sàn',
+  AUTOMATIC: 'Số tự động',
+};
+
+export const FUEL_TYPE_LABELS: Record<FuelType, string> = {
+  GASOLINE: 'Xăng',
+  DIESEL: 'Dầu',
+  ELECTRIC: 'Điện',
+  HYBRID: 'Hybrid',
+};
+
+export const CAR_DOCUMENT_TYPE_LABELS: Record<CarDocumentType, string> = {
+  REGISTRATION: 'Giấy đăng ký xe',
+  INSPECTION: 'Giấy đăng kiểm',
+};
+
+/** The house rules that can be switched on (spec §4.1); `note` is free text. */
+export const CAR_RULE_LABELS = {
+  noSmoking: 'Không hút thuốc',
+  noPets: 'Không chở thú cưng',
+  noDurianSeafood: 'Không chở sầu riêng, hải sản',
+  sameFuelLevel: 'Trả xe với mức nhiên liệu như lúc nhận',
+  keepClean: 'Giữ vệ sinh xe',
+} as const;
+
+export const CAR_STATUS_LABELS: Record<CarStatus, string> = {
+  DRAFT: 'Bản nháp',
+  PENDING_REVIEW: 'Chờ duyệt',
+  REJECTED: 'Bị từ chối',
+  ACTIVE: 'Đang cho thuê',
+  PAUSED: 'Tạm ngưng',
+  HIDDEN: 'Bị ẩn',
+  REMOVED: 'Đã gỡ',
+};
+
 // ─── License plate ──────────────────────────────────────────────────────────
 
 /**

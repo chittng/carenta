@@ -24,6 +24,7 @@ export const routes = {
   signUp: '/dang-ky',
   myTrips: '/chuyen-cua-toi',
   myCars: '/xe-cua-toi',
+  newCar: '/xe-cua-toi/moi',
   ownerBookings: '/don-cho-thue',
   wallet: '/vi',
   messages: '/tin-nhan',
@@ -50,7 +51,7 @@ export function isActivePath(pathname: string, href: string): boolean {
 /** Desktop header links, shown to everyone. */
 export const headerNav: NavItem[] = [
   { href: routes.search, label: 'Tìm xe', icon: SearchIcon },
-  { href: routes.myCars, label: 'Cho thuê xe', icon: KeyRoundIcon },
+  { href: routes.newCar, label: 'Cho thuê xe', icon: KeyRoundIcon },
 ];
 
 /** Signed-in user's pages: the account menu on desktop and the account sheet on mobile. */

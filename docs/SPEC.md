@@ -73,6 +73,7 @@ Người dùng chưa có GPLX được duyệt vẫn xem và tìm xe bình thư�
 - **Quy định xe** (bật/tắt từng mục, có thể ghi chú thêm): không hút thuốc, không chở thú cưng, không chở sầu riêng/hải sản, trả xe với mức nhiên liệu như lúc nhận, giữ vệ sinh xe.
 - **Giới hạn km** (tuỳ chọn): số km/ngày và phụ phí cho mỗi km vượt.
 - **Lưu nháp và gửi duyệt**: lần lưu đầu tiên cần đủ thông tin cơ bản và địa chỉ xe. Ảnh, giấy tờ và tiện nghi có thể bổ sung ở các bước sau. Muốn gửi duyệt thì xe phải có 4–15 ảnh, bảng giá, giấy đăng ký và giấy đăng kiểm còn hạn (ngày hết hạn từ hôm nay trở đi). Xe bị từ chối thì chủ xe sửa rồi gửi duyệt lại.
+- **Các bước đăng xe** (`/xe-cua-toi/moi`): Thông tin xe → Vị trí & giao nhận → Ảnh → Tiện nghi & quy định → Giá & cọc → Giấy tờ → Xem lại & gửi duyệt. Vị trí đứng thứ hai vì lần lưu đầu cần địa chỉ; từ bước hai trở đi mỗi bước lưu bản nháp, chủ xe quay lại tiếp tục được. Bước cuối liệt kê những gì còn thiếu để gửi duyệt.
 - **Năm sản xuất**: không giới hạn tuổi xe. Hệ thống chỉ nhận năm từ 1990 đến năm sau để chặn lỗi nhập.
 - **Xoá xe**: chỉ xoá được xe chưa từng được duyệt (nháp hoặc bị từ chối). Xe đã từng hiển thị chỉ tạm ngưng được, để giữ lịch sử đơn và đánh giá.
 - **[Đề xuất]** Biển số theo dạng `51K-123.45` (hoặc `51K-1234` với biển cũ 4 số); hệ thống tự chuẩn hoá khi nhập. Mỗi biển số chỉ thuộc một xe, kể cả biển số đang nằm trong bản sửa chờ duyệt. Không nhận biển ngoại giao.
@@ -329,22 +330,22 @@ Gửi khi: xác thực tài khoản, quên mật khẩu, GPLX hoặc xe được
 
 ## 14. Kiến trúc kỹ thuật
 
-| Thành phần           | Lựa chọn                                                                                     |
-| -------------------- | -------------------------------------------------------------------------------------------- |
-| Monorepo             | pnpm workspaces + Turborepo                                                                  |
-| Frontend             | Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, TanStack Query                    |
-| Backend              | NestJS, TypeScript, REST + WebSocket (Socket.IO) cho chat                                    |
-| CSDL                 | PostgreSQL + Prisma ORM. Tìm theo vị trí bằng vĩ độ/kinh độ và Haversine, không dùng PostGIS |
-| Hàng đợi / cache     | Valkey (tương thích Redis) + BullMQ (gửi email, job hết hạn đơn, giải phóng cọc)             |
-| Lưu file             | S3-compatible: RustFS khi chạy local, Cloudflare R2 khi deploy. Bucket public và private     |
-| Email                | Nodemailer. Local dùng Mailpit, khi deploy dùng Resend                                       |
-| Thanh toán           | VNPay sandbox                                                                                |
-| Bản đồ               | Leaflet + OpenStreetMap. Gợi ý địa chỉ bằng Nominatim                                        |
-| Xác thực             | Email + mật khẩu, JWT (access + refresh token qua httpOnly cookie)                           |
-| Web gọi API          | Qua `/api/v1` của chính trang web, Next.js chuyển tiếp sang API, nên cookie luôn cùng site   |
-| Kiểm thử             | Vitest (API, `packages/shared` và web), Playwright (E2E cho các luồng chính)                 |
-| Môi trường           | Docker Compose cho local (Postgres, Valkey, RustFS, Mailpit)                                 |
-| Deploy **[Đề xuất]** | Web lên Vercel. API, Postgres, Valkey lên Railway hoặc Render                                |
+| Thành phần           | Lựa chọn                                                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Monorepo             | pnpm workspaces + Turborepo                                                                                                                     |
+| Frontend             | Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, TanStack Query                                                                       |
+| Backend              | NestJS, TypeScript, REST + WebSocket (Socket.IO) cho chat                                                                                       |
+| CSDL                 | PostgreSQL + Prisma ORM. Tìm theo vị trí bằng vĩ độ/kinh độ và Haversine, không dùng PostGIS                                                    |
+| Hàng đợi / cache     | Valkey (tương thích Redis) + BullMQ (gửi email, job hết hạn đơn, giải phóng cọc)                                                                |
+| Lưu file             | S3-compatible: RustFS khi chạy local, Cloudflare R2 khi deploy. Bucket public và private                                                        |
+| Email                | Nodemailer. Local dùng Mailpit, khi deploy dùng Resend                                                                                          |
+| Thanh toán           | VNPay sandbox                                                                                                                                   |
+| Bản đồ               | Leaflet + OpenStreetMap (nền HOT của OSM France). Gợi ý địa chỉ bằng Nominatim, dự phòng Photon (cũng dữ liệu OSM) khi không gọi được Nominatim |
+| Xác thực             | Email + mật khẩu, JWT (access + refresh token qua httpOnly cookie)                                                                              |
+| Web gọi API          | Qua `/api/v1` của chính trang web, Next.js chuyển tiếp sang API, nên cookie luôn cùng site                                                      |
+| Kiểm thử             | Vitest (API, `packages/shared` và web), Playwright (E2E cho các luồng chính)                                                                    |
+| Môi trường           | Docker Compose cho local (Postgres, Valkey, RustFS, Mailpit)                                                                                    |
+| Deploy **[Đề xuất]** | Web lên Vercel. API, Postgres, Valkey lên Railway hoặc Render                                                                                   |
 
 ### Tải ảnh lên **[Đề xuất]**
 

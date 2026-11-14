@@ -19,14 +19,35 @@ import { ApiRequestError } from './api/errors';
  */
 export function useZodForm<Input extends FieldValues, Output extends FieldValues>(
   schema: z.ZodType<Output, Input>,
-  props?: Omit<UseFormProps<Input, unknown, Output>, 'resolver'>,
+  props?: Omit<UseFormProps<Input, unknown, Output>, 'resolver'> & {
+    /**
+     * Messages for fields left empty, by path (e.g. `{ modelId: 'Vui lòng chọn dòng xe.' }`).
+     * Empty number and select inputs reach zod as null/undefined, whose default messages
+     * ("mong đợi số, nhận được undefined") mean nothing to users.
+     */
+    requiredMessages?: Partial<Record<string, string>>;
+  },
 ) {
+  const { requiredMessages, ...formProps } = props ?? {};
   return useForm<Input, unknown, Output>({
     mode: 'onTouched',
-    ...props,
+    ...formProps,
     // Explicit type arguments pick the zod 4 overload; inference lands on the zod 3 one.
-    resolver: zodResolver<Input, unknown, Output, z.ZodType<Output, Input>>(schema),
+    resolver: zodResolver<Input, unknown, Output, z.ZodType<Output, Input>>(schema, {
+      error: (issue) => emptyFieldMessage(issue, requiredMessages),
+    }),
   });
+}
+
+/** The message for a field left empty, or undefined to keep zod's own message. */
+export function emptyFieldMessage(
+  issue: { code?: string; input?: unknown; path?: PropertyKey[] },
+  messages: Partial<Record<string, string>> = {},
+): string | undefined {
+  const empty = issue.input === undefined || issue.input === null;
+  if (!empty || (issue.code !== 'invalid_type' && issue.code !== 'invalid_value')) return undefined;
+  const path = (issue.path ?? []).map(String).join('.');
+  return messages[path] ?? 'Vui lòng điền mục này.';
 }
 
 /** Where errors not tied to a field go; render `formState.errors.root?.server?.message`. */
