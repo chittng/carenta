@@ -35,7 +35,8 @@ export const SERVER_ERROR_FIELD = 'root.server';
 /**
  * Shows an API error on the form: each `VALIDATION_FAILED` detail on its field (the API
  * reports paths like `pricing.weekdayPrice`, the same as react-hook-form's), anything else on
- * `root.server`. Use with `meta: { errorToast: false }` on the mutation.
+ * `root.server` unless `codeFields` names a field for its code. Use with
+ * `meta: { errorToast: false }` on the mutation.
  *
  * Returns whether the error was an API error; other errors are left to the caller.
  */
@@ -43,8 +44,16 @@ export function applyApiError<Values extends FieldValues>(
   error: unknown,
   setError: UseFormSetError<Values>,
   fields: readonly Path<Values>[],
+  /** Business errors that belong to one field, e.g. `{ EMAIL_TAKEN: 'email' }`. */
+  codeFields: Partial<Record<string, Path<Values>>> = {},
 ): boolean {
   if (!(error instanceof ApiRequestError)) return false;
+
+  const codeField = codeFields[error.code];
+  if (codeField) {
+    setError(codeField, { type: 'server', message: error.message }, { shouldFocus: true });
+    return true;
+  }
 
   const details = error.code === ErrorCode.VALIDATION_FAILED ? error.details : [];
   const unplaced: string[] = [];

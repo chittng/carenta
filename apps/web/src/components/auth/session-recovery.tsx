@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { LoadingState } from '@/components/states/loading-state';
@@ -18,6 +18,9 @@ import { fetchSessionUser, signInHref } from '@/lib/session';
 export function SessionRecovery() {
   const router = useRouter();
   const pathname = usePathname();
+  const search = useSearchParams().toString();
+  // Come back to the same page, query included, after signing in.
+  const here = search ? `${pathname}?${search}` : pathname;
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -29,7 +32,7 @@ export function SessionRecovery() {
         if (cancelled) return;
         queryClient.setQueryData(SESSION_QUERY_KEY, user);
         if (user) router.refresh();
-        else router.replace(signInHref(pathname));
+        else router.replace(signInHref(here));
       } catch (error) {
         if (!cancelled) setFailure(errorMessage(error));
       }
@@ -38,7 +41,7 @@ export function SessionRecovery() {
     return () => {
       cancelled = true;
     };
-  }, [pathname, queryClient, router]);
+  }, [here, queryClient, router]);
 
   if (failure) {
     return (
