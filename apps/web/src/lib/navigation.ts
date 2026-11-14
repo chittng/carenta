@@ -36,6 +36,8 @@ export const routes = {
   cancellationPolicy: '/chinh-sach-huy',
 } as const;
 
+export const carDetailPath = (id: string): string => `/xe/${encodeURIComponent(id)}`;
+
 export interface NavItem {
   href: string;
   label: string;
