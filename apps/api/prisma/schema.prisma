@@ -429,6 +429,11 @@ model Car {
   addressLine String  @map("address_line")
   latitude    Decimal @db.Decimal(9, 6)
   longitude   Decimal @db.Decimal(9, 6)
+  // Public map position (decided 2026-11-14): the exact location moved by a fixed offset of
+  // 200 m to 1 km, derived from the car id so it never changes between requests. Generated
+  // in SQL from latitude/longitude; the app never writes it.
+  approxLatitude  Decimal @default(dbgenerated()) @map("approx_latitude") @db.Decimal(9, 6)
+  approxLongitude Decimal @default(dbgenerated()) @map("approx_longitude") @db.Decimal(9, 6)
 
   // Delivery (spec §4.4). Pickup at the car's location is always available.
   // All three are set when delivery is on and null when off (CHECK in SQL). The first
@@ -467,7 +472,7 @@ model Car {
 
   @@index([ownerId])
   @@index([status, province])
-  @@index([latitude, longitude])
+  @@index([approxLatitude, approxLongitude])
   @@index([modelId])
   @@map("cars")
 }
@@ -572,11 +577,16 @@ model CarPricing {
   // VND per hour after the 30-minute grace period; null means 10% of the daily price,
   // so it is required when there is no daily price (CHECK in SQL)
   lateFeePerHour            Int?     @map("late_fee_per_hour")
+  // What one day costs, to filter and sort search results by price (decided 2026-11-14):
+  // the daily price, else the lower of 24 × hourly and monthly ÷ 30 (to the nearest
+  // 1.000đ). Generated in SQL; the app never writes it.
+  dailyEquivalentPrice      Int      @default(dbgenerated()) @map("daily_equivalent_price")
   createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
 
+  @@index([dailyEquivalentPrice])
   @@map("car_pricings")
 }
 

@@ -12,7 +12,7 @@ import { type Prisma } from '../generated/prisma/client.js';
 import { type UploadsService } from '../storage/uploads.service.js';
 
 const catalogRef = { select: { id: true, name: true } } as const;
-const modelWithMake = {
+export const modelWithMake = {
   select: { id: true, name: true, make: catalogRef },
 } as const;
 

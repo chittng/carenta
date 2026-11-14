@@ -7,27 +7,9 @@ import {
   catalogRefSchema,
   ownerCarSchema,
 } from './cars.js';
+import { paginationQuerySchema } from './pagination.js';
 
 /** Admin-only API (spec §11): car review, users, catalogue. */
-
-// ─── Pagination ─────────────────────────────────────────────────────────────
-
-export const PAGE_SIZE_DEFAULT = 20;
-export const PAGE_SIZE_MAX = 100;
-
-export const paginationQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(PAGE_SIZE_MAX).default(PAGE_SIZE_DEFAULT),
-});
-
-export const pageOf = <T extends z.ZodType>(item: T) =>
-  z.object({
-    items: z.array(item),
-    page: z.int(),
-    pageSize: z.int(),
-    /** Matching items across all pages. */
-    total: z.int(),
-  });
 
 const searchText = z
   .string()
@@ -230,4 +212,3 @@ export type CreateCatalogItemInput = z.infer<typeof createCatalogItemSchema>;
 export type UpdateCatalogItemInput = z.infer<typeof updateCatalogItemSchema>;
 export type CreateAmenityInput = z.infer<typeof createAmenitySchema>;
 export type UpdateAmenityInput = z.infer<typeof updateAmenitySchema>;
-export type Page<T> = { items: T[]; page: number; pageSize: number; total: number };

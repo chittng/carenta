@@ -127,6 +127,13 @@ Chủ xe chọn cho từng xe:
 - **Sắp xếp**: giá, đánh giá, khoảng cách, mới nhất.
 - **Hai chế độ xem**: danh sách và **bản đồ** (OpenStreetMap + Leaflet, miễn phí).
 - Chỉ hiện những xe **trống trong khoảng thời gian đã chọn**.
+- **Xe được hiện**: đã duyệt, không tạm ngưng, không bị ẩn hoặc gỡ, không đang bị ẩn do chủ xe huỷ nhiều, và chủ xe không bị khoá.
+- **Thời gian nhận và trả xe là tuỳ chọn.** Chưa chọn thì không lọc lịch trống và không có giá ước tính. Đã chọn thì kiểm tra như lúc đặt xe (bước 30 phút, giờ nhận cách hiện tại ít nhất 2 giờ và không quá 90 ngày), chỉ hiện xe trống cả chuyến (tính cả thời gian đệm, §4.3) và có thời gian thuê tối thiểu/tối đa phù hợp, kèm tiền thuê ước tính của chuyến.
+- **Khoảng giá và sắp xếp theo giá** dùng **giá quy đổi 1 ngày**: giá ngày; xe không bật giá ngày thì lấy mức thấp hơn của giá giờ × 24 và giá tháng ÷ 30 (làm tròn đến 1.000đ). Con số này không phụ thuộc thời gian đã chọn.
+- **Vị trí gần đúng**: mỗi xe được lệch một khoảng cố định từ 200 m đến 1 km (không đổi giữa các lần tải), bản đồ vẽ vòng tròn bán kính 1 km quanh điểm đó. Lọc theo bán kính và khoảng cách hiển thị cũng tính theo điểm gần đúng, để không dò ra được vị trí thật.
+- **Sắp xếp mặc định**: tìm quanh một vị trí thì gần nhất trước, còn lại thì xe mới được duyệt trước. Xếp theo đánh giá thì xe chưa có đánh giá nằm cuối.
+- **[Đề xuất]** Tìm quanh một vị trí mặc định bán kính 10 km, tối đa 50 km. Lọc tiện nghi thì xe phải có đủ mọi tiện nghi đã chọn. Mỗi trang tối đa 50 xe.
+- **[Đề xuất]** Thời gian đệm chỉ tính giữa hai chuyến; khoảng chủ xe tự chặn chỉ cần không trùng với giờ nhận–trả xe.
 
 ### 5.2 Trang chi tiết xe
 
